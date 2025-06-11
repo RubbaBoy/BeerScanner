@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+#  app:
+#    build: .
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - db
+#    environment:
+#      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/beerscanner
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=postgres
+#      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+#      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+#      - OPENAI_API_KEY=${OPENAI_API_KEY}
+#      - JWT_SECRET=${JWT_SECRET:-defaultSecretKey}
+#      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+#      - MAIL_USERNAME=${MAIL_USERNAME}
+#      - MAIL_PASSWORD=${MAIL_PASSWORD}
+#    restart: unless-stopped
+#    volumes:
+#      - app-data:/tmp
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=beerscanner
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  app-data:

@@ -301,6 +301,20 @@ public class BeerService {
     @Transactional
     public void deleteBeer(Long id) {
         Beer beer = getBeerById(id);
+
+        // Remove beer from all bars' previouslyAvailableBeers collections
+        for (Bar bar : beer.getPreviouslyAvailableAt()) {
+            bar.getPastBeers().remove(beer);
+        }
+        beer.getPreviouslyAvailableAt().clear();
+
+        // Also clean up current availability if needed
+        for (Bar bar : beer.getAvailableAt()) {
+            bar.getCurrentBeers().remove(beer);
+        }
+        beer.getAvailableAt().clear();
+
+
         beerRepository.delete(beer);
     }
 

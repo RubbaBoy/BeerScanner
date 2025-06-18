@@ -103,8 +103,12 @@ public class BarService {
 
         existingBar.setName(bar.getName());
         existingBar.setLocation(bar.getLocation());
+
+        existingBar.setAiInstructions(bar.getAiInstructions());
         existingBar.setMenuUrl(bar.getMenuUrl());
         existingBar.setMenuXPath(bar.getMenuXPath());
+
+        existingBar.setWebpageSettings(bar.getWebpageSettings());
 
         return barRepository.save(existingBar);
     }

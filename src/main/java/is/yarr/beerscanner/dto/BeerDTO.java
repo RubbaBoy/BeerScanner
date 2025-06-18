@@ -21,13 +21,13 @@ public class BeerDTO {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
-    private Set<BarSimpleDTO> availableAt;
-    private Set<BarSimpleDTO> previouslyAvailableAt;
+    private Set<BarDTO> availableAt;
+    private Set<BarDTO> previouslyAvailableAt;
 
     public BeerDTO() {
     }
 
-    public BeerDTO(Long id, String name, String type, String brewery, Double abv, String description, LocalDateTime createdAt, LocalDateTime updatedAt, Set<BarSimpleDTO> availableAt, Set<BarSimpleDTO> previouslyAvailableAt) {
+    public BeerDTO(Long id, String name, String type, String brewery, Double abv, String description, LocalDateTime createdAt, LocalDateTime updatedAt, Set<BarDTO> availableAt, Set<BarDTO> previouslyAvailableAt) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -76,11 +76,11 @@ public class BeerDTO {
         return new BeerDTOBuilder();
     }
 
-    public Set<BarSimpleDTO> getAvailableAt() {
+    public Set<BarDTO> getAvailableAt() {
         return availableAt;
     }
 
-    public Set<BarSimpleDTO> getPreviouslyAvailableAt() {
+    public Set<BarDTO> getPreviouslyAvailableAt() {
         return previouslyAvailableAt;
     }
 
@@ -93,8 +93,8 @@ public class BeerDTO {
         private String description;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
-        private Set<BarSimpleDTO> availableAt;
-        private Set<BarSimpleDTO> previouslyAvailableAt;
+        private Set<BarDTO> availableAt;
+        private Set<BarDTO> previouslyAvailableAt;
 
         public BeerDTOBuilder id(Long id) {
             this.id = id;
@@ -136,12 +136,12 @@ public class BeerDTO {
             return this;
         }
 
-        public BeerDTOBuilder availableAt(Set<BarSimpleDTO> availableAt) {
+        public BeerDTOBuilder availableAt(Set<BarDTO> availableAt) {
             this.availableAt = availableAt;
             return this;
         }
 
-        public BeerDTOBuilder previouslyAvailableAt(Set<BarSimpleDTO> previouslyAvailableAt) {
+        public BeerDTOBuilder previouslyAvailableAt(Set<BarDTO> previouslyAvailableAt) {
             this.previouslyAvailableAt = previouslyAvailableAt;
             return this;
         }

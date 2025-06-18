@@ -6,18 +6,23 @@ import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerRequest;
 import is.yarr.beerscanner.security.UserPrincipal;
-import is.yarr.beerscanner.service.BarService;
 import is.yarr.beerscanner.service.BeerService;
 import is.yarr.beerscanner.service.DTOMapperService;
 import is.yarr.beerscanner.service.UserService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,13 +31,17 @@ import java.util.stream.Collectors;
  * Controller for beer-related operations.
  */
 @RestController
-@RequiredArgsConstructor
 public class BeerController {
 
     private final BeerService beerService;
-    private final BarService barService;
     private final UserService userService;
     private final DTOMapperService dtoMapperService;
+
+    public BeerController(BeerService beerService, UserService userService, DTOMapperService dtoMapperService) {
+        this.beerService = beerService;
+        this.userService = userService;
+        this.dtoMapperService = dtoMapperService;
+    }
 
     /**
      * Get all beers (public endpoint).

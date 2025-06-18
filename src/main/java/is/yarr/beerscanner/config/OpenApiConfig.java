@@ -11,7 +11,7 @@ import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Configuration for OpenAPI documentation.
@@ -38,7 +38,7 @@ public class OpenApiConfig {
                         .license(new License()
                                 .name("MIT License")
                                 .url("https://opensource.org/licenses/MIT")))
-                .servers(Arrays.asList(
+                .servers(Collections.singletonList(
                         new Server().url("/").description("Default Server URL")))
                 .components(new Components()
                         .addSecuritySchemes("bearer-jwt", new SecurityScheme()

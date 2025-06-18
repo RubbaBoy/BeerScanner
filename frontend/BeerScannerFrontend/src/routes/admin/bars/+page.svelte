@@ -1,14 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { getAllBars, getUnapprovedBars, approveBar, deleteBar } from '$lib/services';
+  import {getAllBars, getUnapprovedBars, approveBar, deleteBar, getAllAdminBars} from '$lib/services';
   import { currentUser } from '$lib/stores';
   import { Pagination } from '$lib/components';
   import type { Bar, PageBar } from '$lib/types';
   
   // State variables
   let bars: Bar[] = $state([]);
-  let unapprovedBars: Bar[] = $state([]);
+  let unapprovedBars: BarAdmin[] = $state([]);
   let totalPages = $state(0);
   let currentPage = $state(0);
   let isLoading = $state(true);
@@ -33,7 +33,7 @@
     
     try {
       if (activeTab === 'all') {
-        const response = await getAllBars({ page, size: 10, sort: ['name,asc'] });
+        const response = await getAllAdminBars({ page, size: 10, sort: ['name,asc'] });
         bars = response.content;
         totalPages = response.totalPages;
         currentPage = page;

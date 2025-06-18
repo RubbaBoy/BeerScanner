@@ -1,23 +1,34 @@
 package is.yarr.beerscanner.controller;
 
+import is.yarr.beerscanner.dto.BarAdminDTO;
 import is.yarr.beerscanner.dto.BarCheckDTO;
 import is.yarr.beerscanner.dto.BarDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
+import is.yarr.beerscanner.model.BarWebpageSettings;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.scheduler.BarCheckScheduler;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.BarCheckService;
 import is.yarr.beerscanner.service.BarService;
 import is.yarr.beerscanner.service.DTOMapperService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +40,8 @@ import java.util.stream.Collectors;
  */
 @RestController
 public class BarController {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BarController.class);
 
     private final BarService barService;
     private final BarCheckService barCheckService;
@@ -137,7 +150,7 @@ public class BarController {
         Bar bar = Bar.builder()
                 .name(barDTO.getName())
                 .location(barDTO.getLocation())
-                .menuUrl(barDTO.getMenuUrl())
+//                .menuUrl(barDTO.getMenuUrl()) // TODO: Add a BarRequest DTO or something? Or dont include it here and make the admin do it
                 .isApproved(false) // New bars are not approved by default
                 .build();
 
@@ -161,6 +174,22 @@ public class BarController {
     }
 
     /**
+     * Get all bars (with admin info).
+     *
+     * @param pageable pagination information
+     * @return a page of bar DTOs
+     */
+    @GetMapping("/api/v1/admin/bars")
+    public ResponseEntity<Page<BarAdminDTO>> getAllBarsAdmin(Pageable pageable) {
+        Page<Bar> bars = barService.getAllBars(pageable);
+        List<BarAdminDTO> barDTOs = bars.getContent().stream()
+                .map(dtoMapperService::toDTOAdmin)
+                .collect(Collectors.toList());
+        Page<BarAdminDTO> barDTOPage = new PageImpl<>(barDTOs, pageable, bars.getTotalElements());
+        return ResponseEntity.ok(barDTOPage);
+    }
+
+    /**
      * Administratively creates a new bar (already approved).
      *
      * @param userPrincipal the authenticated user
@@ -168,9 +197,9 @@ public class BarController {
      * @return the created bar DTO
      */
     @PostMapping("/api/v1/admin/bars")
-    public ResponseEntity<BarDTO> createBar(
+    public ResponseEntity<BarAdminDTO> createBar(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @RequestBody BarDTO barDTO) {
+            @RequestBody BarAdminDTO barDTO) {
 
         // Convert DTO to entity
         Bar bar = Bar.builder()
@@ -181,7 +210,7 @@ public class BarController {
                 .build();
 
         Bar createdBar = barService.createBar(bar, userPrincipal.getId());
-        return ResponseEntity.ok(dtoMapperService.toDTO(createdBar));
+        return ResponseEntity.ok(dtoMapperService.toDTOAdmin(createdBar));
     }
 
     /**
@@ -192,12 +221,12 @@ public class BarController {
      */
     @GetMapping("/api/v1/admin/bars/unapproved")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Page<BarDTO>> getUnapprovedBars(Pageable pageable) {
+    public ResponseEntity<Page<BarAdminDTO>> getUnapprovedBars(Pageable pageable) {
         Page<Bar> bars = barService.getUnapprovedBars(pageable);
-        List<BarDTO> barDTOs = bars.getContent().stream()
-                .map(dtoMapperService::toDTO)
+        List<BarAdminDTO> barDTOs = bars.getContent().stream()
+                .map(dtoMapperService::toDTOAdmin)
                 .collect(Collectors.toList());
-        Page<BarDTO> barDTOPage = new PageImpl<>(barDTOs, pageable, bars.getTotalElements());
+        Page<BarAdminDTO> barDTOPage = new PageImpl<>(barDTOs, pageable, bars.getTotalElements());
         return ResponseEntity.ok(barDTOPage);
     }
 
@@ -209,9 +238,22 @@ public class BarController {
      */
     @PostMapping("/api/v1/admin/bars/{id}/approve")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BarDTO> approveBar(@PathVariable Long id) {
+    public ResponseEntity<BarAdminDTO> approveBar(@PathVariable Long id) {
         Bar bar = barService.approveBar(id);
-        BarDTO barDTO = dtoMapperService.toDTO(bar);
+        BarAdminDTO barDTO = dtoMapperService.toDTOAdmin(bar);
+        return ResponseEntity.ok(barDTO);
+    }
+
+    /**
+     * Get a bar by ID (with admin info)
+     *
+     * @param id the bar ID
+     * @return the bar DTO
+     */
+    @GetMapping("/api/v1/admin/bars/{id}")
+    public ResponseEntity<BarAdminDTO> getBarAdminById(@PathVariable Long id) {
+        Bar bar = barService.getBarById(id);
+        BarAdminDTO barDTO = dtoMapperService.toDTOAdmin(bar);
         return ResponseEntity.ok(barDTO);
     }
 
@@ -224,20 +266,40 @@ public class BarController {
      */
     @PutMapping("/api/v1/admin/bars/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BarDTO> updateBar(
+    public ResponseEntity<BarAdminDTO> updateBar(
             @PathVariable Long id,
-            @RequestBody BarDTO barDTO) {
+            @RequestBody BarAdminDTO barDTO) {
+
+        LOGGER.info("Updating bar with ID: {}:\n{}", id, barDTO);
+
+        BarWebpageSettings barWebpageSettings = null;
+        if (barDTO.getMenuComponentXPath() != null && !barDTO.getMenuComponentXPath().isEmpty()) {
+            LOGGER.info("Setting BarWebpageSettings for bar with ID: {}", id);
+            barWebpageSettings = BarWebpageSettings.builder()
+                    .menuXPath(barDTO.getMenuComponentXPath())
+                    .ageVerificationXPath(barDTO.getAgeVerificationXPath())
+                    .cleanupScript(barDTO.getCleanupScript())
+                    .processAsText(barDTO.isProcessAsText())
+                    .build();
+        }
 
         // Convert DTO to entity
         Bar bar = Bar.builder()
                 .name(barDTO.getName())
                 .location(barDTO.getLocation())
+
                 .aiInstructions(barDTO.getAiInstructions())
                 .menuUrl(barDTO.getMenuUrl())
+                .menuXPath(barDTO.getMenuXPath())
+
+                .webpageSettings(barWebpageSettings)
                 .build();
 
         Bar updatedBar = barService.updateBar(id, bar);
-        return ResponseEntity.ok(dtoMapperService.toDTO(updatedBar));
+
+        LOGGER.info("Updated bar: {}", updatedBar);
+
+        return ResponseEntity.ok(dtoMapperService.toDTOAdmin(updatedBar));
     }
 
     /**

@@ -1,8 +1,6 @@
 package is.yarr.beerscanner.security;
 
 import is.yarr.beerscanner.model.User;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,8 +14,6 @@ import java.util.Map;
 /**
  * Custom user principal for authentication.
  */
-@AllArgsConstructor
-@Getter
 public class UserPrincipal implements OAuth2User, UserDetails {
 
     private Long id;
@@ -25,6 +21,14 @@ public class UserPrincipal implements OAuth2User, UserDetails {
     private String name;
     private Collection<? extends GrantedAuthority> authorities;
     private Map<String, Object> attributes;
+
+    public UserPrincipal(Long id, String email, String name, Collection<? extends GrantedAuthority> authorities, Map<String, Object> attributes) {
+        this.id = id;
+        this.email = email;
+        this.name = name;
+        this.authorities = authorities;
+        this.attributes = attributes;
+    }
 
     /**
      * Create a UserPrincipal from a User.
@@ -104,5 +108,28 @@ public class UserPrincipal implements OAuth2User, UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return authorities;
+    }
+
+    @Override
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 }

@@ -5,14 +5,19 @@ import is.yarr.beerscanner.model.Notification;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.DTOMapperService;
 import is.yarr.beerscanner.service.NotificationService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -23,11 +28,15 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/api/v1/notifications")
-@RequiredArgsConstructor
 public class NotificationController {
 
     private final NotificationService notificationService;
     private final DTOMapperService dtoMapperService;
+
+    public NotificationController(NotificationService notificationService, DTOMapperService dtoMapperService) {
+        this.notificationService = notificationService;
+        this.dtoMapperService = dtoMapperService;
+    }
 
     /**
      * Get notifications for the current user.

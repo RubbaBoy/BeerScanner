@@ -1,27 +1,26 @@
 // Type definitions for the Beer Scanner application
 
 // Bar type
-export interface Bar {
-  id?: number;
-  name: string;
-  location: string;
+export interface BarAdmin extends Bar, BarWebpageSettings {
+  aiInstructions?: string
   menuUrl?: string;
   menuXPath?: string;
   lastMenuHash?: string;
-  lastCheckedAt?: string;
-  currentBeers?: Beer[];
-  pastBeers?: Beer[];
-  trackedBy?: User[];
-  checks?: BarCheck[];
-  requestedBy?: User;
-  createdAt?: string;
-  updatedAt?: string;
   approved?: boolean;
 }
 
-export interface BarSimple {
+export interface BarWebpageSettings {
+  menuComponentXPath?: string
+  ageVerificationXPath?: string
+  cleanupScript?: string
+  processAsText?: boolean
+}
+
+export interface Bar {
   id: number
   name: string
+  location: string;
+  lastCheckedAt: string;
 }
 
 // Beer type
@@ -41,8 +40,8 @@ export interface Beer {
 }
 
 export interface BeerExtended extends Beer {
-  availableAt: BarSimple[];
-  previouslyAvailableAt: BarSimple[];
+  availableAt: Bar[];
+  previouslyAvailableAt: Bar[];
 }
 
 // Beer request type
@@ -142,4 +141,5 @@ export type PageBeer = Page<Beer>;
 export type PageBeerExtended = Page<BeerExtended>;
 export type PageBeerRequest = Page<BeerRequest>;
 export type PageBar = Page<Bar>;
+export type PageBarAdmin = Page<BarAdmin>;
 export type PageBarCheck = Page<BarCheck>;

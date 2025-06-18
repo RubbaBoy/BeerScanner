@@ -1,20 +1,23 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { getBarById, updateBar, checkBar } from '$lib/services';
-  import type { Bar, BarCheck } from '$lib/types';
+  import {getBarById, updateBar, checkBar, getBarAdminById} from '$lib/services';
+  import type {Bar, BarAdmin, BarCheck} from '$lib/types';
 
   // Get the bar ID from the URL
   const barId = parseInt($page.params.id);
 
   // State variables
-  let bar: Bar = $state(null);
+  let bar: BarAdmin = $state(null);
   let isLoading = $state(true);
   let isChecking = $state(false);
   let isSaving = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
-  let formData = $state<Bar | null>(null);
+  let formData = $state<BarAdmin | null>(null);
+
+  // Web scraping toggle and related state variables
+  let webScrapingEnabled = $state(false);
 
   // Fetch bar details
   const fetchBar = async () => {
@@ -22,8 +25,11 @@
     error = null;
     
     try {
-      bar = await getBarById(barId);
+      bar = await getBarAdminById(barId);
       formData = { ...bar };
+
+      // If any are set, it's in scraping mode
+      webScrapingEnabled = !!formData.menuComponentXPath
     } catch (e) {
       console.error('Failed to fetch bar:', e);
       error = 'Failed to load bar details. Please try again later.';
@@ -37,6 +43,20 @@
     isSaving = true;
     error = null;
     success = null;
+
+    console.log('Cleanupo:');
+    console.log(formData.cleanupScript);
+
+    if (webScrapingEnabled) {
+      console.log('Web scraping enabled, using component XPath');
+      formData.menuXPath = undefined;
+    } else {
+      console.log('Web scraping disabled, using menu XPath');
+      formData.menuComponentXPath = undefined;
+      formData.ageVerificationXPath = undefined;
+      formData.cleanupScript = undefined;
+      formData.processAsText = undefined;
+    }
     
     try {
       bar = await updateBar(barId, formData);
@@ -184,7 +204,7 @@
           <p class="text-gray-600 mb-1">Menu URL:</p>
           <p class="font-medium break-all">
             {#if bar.menuUrl}
-              <a href={bar.menuUrl} target="_blank" class="text-amber-600 hover:text-amber-700">
+              <a href="{bar.menuUrl}" target="_blank" class="text-amber-600 hover:text-amber-700">
                 {bar.menuUrl}
               </a>
             {:else}
@@ -254,16 +274,74 @@
           />
         </div>
         
+        <!-- Web Scraping Toggle -->
+        <div class="flex items-center">
+          <input
+            type="checkbox"
+            id="webScraping"
+            bind:checked={webScrapingEnabled}
+            class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+          />
+          <label for="webScraping" class="ml-2 block text-sm text-gray-700">Web Scraping</label>
+        </div>
+
+        <!-- Conditional Menu XPath inputs -->
+        {#if !webScrapingEnabled}
         <div>
           <label for="menuXPath" class="block text-sm font-medium text-gray-700 mb-1">Menu XPath</label>
           <input
             type="text"
             id="menuXPath"
+            placeholder="XPath to the menu button"
             bind:value={formData.menuXPath}
             class="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
           />
         </div>
-        
+        {:else}
+          <div>
+            <label for="menuXPathAdvanced" class="block text-sm font-medium text-gray-700 mb-1">Menu XPath <span class="text-red-500">*</span></label>
+            <input
+              type="text"
+              id="menuComponentXPath"
+              placeholder="XPath to the menu element, if the URL is not a direct link"
+              bind:value={formData.menuComponentXPath}
+              required
+              class="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label for="ageVerificationXPath" class="block text-sm font-medium text-gray-700 mb-1">Age Verification XPath</label>
+            <input
+              type="text"
+              id="ageVerificationXPath"
+              bind:value={formData.ageVerificationXPath}
+              class="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label for="cleanupScript" class="block text-sm font-medium text-gray-700 mb-1">Cleanup Script</label>
+            <textarea
+              id="cleanupScript"
+              bind:value={formData.cleanupScript}
+              rows="6"
+              class="w-full px-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent font-mono text-sm"
+              placeholder="// JavaScript code for cleanup..."
+            ></textarea>
+          </div>
+
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="approved"
+              bind:checked={formData.processAsText}
+              class="h-4 w-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded"
+            />
+            <label for="approved" class="ml-2 block text-sm text-gray-700">Process as text <small>If false, an image will be processed of the Menu XPath</small></label>
+          </div>
+        {/if}
+
         <div class="flex items-center">
           <input
             type="checkbox"

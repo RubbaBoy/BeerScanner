@@ -6,13 +6,14 @@ import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.repository.BarCheckRepository;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.service.openai.BeerListOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,8 @@ import java.util.Optional;
  */
 @Service
 public class BarCheckService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BarCheckService.class);
 
     private final BarCheckRepository barCheckRepository;
     private final BarRepository barRepository;
@@ -144,7 +147,7 @@ public class BarCheckService {
             success = true;
         } catch (Exception e) {
             // Update status to failed
-            e.printStackTrace();
+            LOGGER.error("Error processing check for bar {}: {}", bar.getName(), e.getMessage());
             check.setProcessingStatus(BarCheck.ProcessingStatus.FAILED);
             check.setErrorMessage(e.getMessage());
         } finally {

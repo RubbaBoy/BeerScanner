@@ -8,7 +8,6 @@ import is.yarr.beerscanner.model.User;
 import is.yarr.beerscanner.repository.BeerTrackingRepository;
 import is.yarr.beerscanner.repository.NotificationRepository;
 import is.yarr.beerscanner.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.mail.SimpleMailMessage;
@@ -21,19 +20,24 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Service for notification-related operations.
  */
 @Service
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final BeerTrackingRepository beerTrackingRepository;
     private final JavaMailSender mailSender;
+
+    public NotificationService(NotificationRepository notificationRepository, UserRepository userRepository, BeerTrackingRepository beerTrackingRepository, JavaMailSender mailSender) {
+        this.notificationRepository = notificationRepository;
+        this.userRepository = userRepository;
+        this.beerTrackingRepository = beerTrackingRepository;
+        this.mailSender = mailSender;
+    }
 
     /**
      * Get notifications for a user.

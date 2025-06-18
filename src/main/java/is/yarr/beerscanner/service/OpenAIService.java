@@ -7,7 +7,6 @@ import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.ResponseInputFile;
 import com.openai.models.responses.ResponseInputItem;
 import is.yarr.beerscanner.service.openai.BeerListOutput;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,7 +18,6 @@ import java.util.List;
  * Service for OpenAI API operations.
  */
 @Service
-@Slf4j
 public class OpenAIService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIService.class);
@@ -33,11 +31,11 @@ public class OpenAIService {
     /**
      * Extract beers from menu content.
      *
-     * @param menuBase64Pdf the base64 encoded PDF content of the bar menu
+     * @param menuContent the base64 encoded PDF content of the bar menu. If the contentType is "text/plain", this should be the plain text content of the menu.
      * @param barInstructions additional instructions for the AI, specific to the bar
      * @return a list of beers
      */
-    public List<BeerListOutput.BeerOutput> extractBeersFromMenu(String menuBase64Pdf, String contentType, String barInstructions) {
+    public List<BeerListOutput.BeerOutput> extractBeersFromMenu(String menuContent, String contentType, String barInstructions) {
         try {
             if (barInstructions == null || barInstructions.isEmpty()) {
                 barInstructions = "";
@@ -46,18 +44,38 @@ public class OpenAIService {
             var extension = contentType.split("/")[1];
 
             System.out.println("Extracting beers from menu with content type: " + contentType + " and extension: " + extension);
-            System.out.println("The size of the menu is: " + menuBase64Pdf.length());
+            System.out.println("The size of the menu is: " + menuContent.length());
 
-            var inputFile = ResponseInputFile.builder()
-                    .filename("bar-menu.%s".formatted(extension))
-                    .fileData("data:%s;base64,%s".formatted(contentType, menuBase64Pdf))
-                    .build();
+            ResponseInputItem messageInputItem;
 
-            var messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
-                    .role(ResponseInputItem.Message.Role.USER)
-                    .addInputTextContent("Extract the beers from the attached menu.")
-                    .addContent(inputFile)
-                    .build());
+            if (contentType.equals("text/plain")) {
+                var textt = """
+                                Extract the beers from the JSON-extracted menu below:
+                                
+                                ```
+                                %s
+                                ```
+                                """.formatted(menuContent);
+
+                System.out.println("Message length: " + textt.length());
+                System.out.println("textt = \n" + textt);
+
+                messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
+                        .role(ResponseInputItem.Message.Role.USER)
+                        .addInputTextContent(textt)
+                        .build());
+            } else {
+                var inputFile = ResponseInputFile.builder()
+                        .filename("bar-menu.%s".formatted(extension))
+                        .fileData("data:%s;base64,%s".formatted(contentType, menuContent))
+                        .build();
+
+                messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
+                        .role(ResponseInputItem.Message.Role.USER)
+                        .addInputTextContent("Extract the beers from the attached menu.")
+                        .addContent(inputFile)
+                        .build());
+            }
 
             var params = ResponseCreateParams.builder()
                     .model(ChatModel.GPT_4_1_MINI)
@@ -75,11 +93,14 @@ public class OpenAIService {
                     .inputOfResponse(List.of(messageInputItem))
                     .build();
 
+            System.out.println("Sending request to OpenAI with params: " + params);
             var beerListOutputs = client.responses().create(params).output().stream()
                     .flatMap(item -> item.message().stream())
                     .flatMap(message -> message.content().stream())
                     .flatMap(content -> content.outputText().stream())
                     .toList();
+
+            System.out.println("Received beer list outputs: " + beerListOutputs.size());
 
             if (beerListOutputs.size() != 1) {
                 LOGGER.error("Expected exactly one beer list output, but found: {}", beerListOutputs.size());
@@ -87,7 +108,7 @@ public class OpenAIService {
 
             return beerListOutputs.getFirst().beers;
         } catch (Exception e) {
-            log.error("Error extracting beers from menu", e);
+            LOGGER.error("Error extracting beers from menu", e);
             throw new RuntimeException("Error extracting beers from menu: " + e.getMessage(), e);
         }
     }

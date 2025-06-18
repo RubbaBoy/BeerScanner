@@ -1,8 +1,8 @@
 package is.yarr.beerscanner.service;
 
+import is.yarr.beerscanner.dto.BarAdminDTO;
 import is.yarr.beerscanner.dto.BarCheckDTO;
 import is.yarr.beerscanner.dto.BarDTO;
-import is.yarr.beerscanner.dto.BarSimpleDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
 import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.dto.BeerTrackingDTO;
@@ -71,8 +71,8 @@ public class DTOMapperService {
                 .description(beer.getDescription())
                 .createdAt(beer.getCreatedAt())
                 .updatedAt(beer.getUpdatedAt())
-                .availableAt(beer.getAvailableAt().stream().map(bar -> new BarSimpleDTO(bar.getId(), bar.getName())).collect(Collectors.toSet()))
-                .previouslyAvailableAt(beer.getPreviouslyAvailableAt().stream().map(bar -> new BarSimpleDTO(bar.getId(), bar.getName())).collect(Collectors.toSet()))
+                .availableAt(beer.getAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
+                .previouslyAvailableAt(beer.getPreviouslyAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
                 .build();
     }
 
@@ -138,14 +138,44 @@ public class DTOMapperService {
                 .id(bar.getId())
                 .name(bar.getName())
                 .location(bar.getLocation())
+                .lastCheckedAt(bar.getLastCheckedAt())
+                .build();
+    }
+
+    /**
+     * Convert a Bar entity to a BarDTO.
+     *
+     * @param bar the Bar entity
+     * @return the BarDTO
+     */
+    public BarAdminDTO toDTOAdmin(Bar bar) {
+        if (bar == null) {
+            return null;
+        }
+
+        var builder = BarAdminDTO.builder()
+                .id(bar.getId())
+                .name(bar.getName())
+                .location(bar.getLocation())
+                .lastCheckedAt(bar.getLastCheckedAt())
+                // Admin parts
+                .aiInstructions(bar.getAiInstructions())
                 .menuUrl(bar.getMenuUrl())
                 .menuXPath(bar.getMenuXPath())
                 .lastMenuHash(bar.getLastMenuHash())
-                .lastCheckedAt(bar.getLastCheckedAt())
                 .isApproved(bar.isApproved())
                 .createdAt(bar.getCreatedAt())
-                .updatedAt(bar.getUpdatedAt())
-                .build();
+                .updatedAt(bar.getUpdatedAt());
+
+        var webpageSettings = bar.getWebpageSettings();
+        if (webpageSettings != null) {
+            builder.menuComponentXPath(webpageSettings.getMenuComponentXPath())
+                    .ageVerificationXPath(webpageSettings.getAgeVerificationXPath())
+                    .cleanupScript(webpageSettings.getCleanupScript())
+                    .processAsText(webpageSettings.isProcessAsText());
+        }
+
+        return builder.build();
     }
 
     /**

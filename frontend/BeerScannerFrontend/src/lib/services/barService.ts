@@ -1,6 +1,6 @@
 import api from './api';
 import { trackUserResource, untrackUserResource } from './serviceHelpers';
-import type { Bar, PageBar, Beer, BarCheck, PageBarCheck, Pageable, User } from '$lib/types';
+import type {Bar, PageBar, Beer, BarCheck, PageBarCheck, Pageable, User, BarAdmin, PageBarAdmin} from '$lib/types';
 
 // Get all bars with pagination
 export const getAllBars = async (pageable: Pageable): Promise<PageBar> => {
@@ -66,8 +66,21 @@ export const untrackBar = async (barId: number): Promise<User> => {
 };
 
 // Admin functions
+
+// Get all bars (with additional info Admins need) with pagination
+export const getAllAdminBars = async (pageable: Pageable): Promise<PageBarAdmin> => {
+  const response = await api.get('/api/v1/admin/bars', { params: pageable });
+  return response.data;
+};
+
+// Get a bar by ID (with additional info Admins need)
+export const getBarAdminById = async (id: number): Promise<BarAdmin> => {
+  const response = await api.get(`/api/v1/admin/bars/${id}`);
+  return response.data;
+};
+
 // Update a bar (admin only)
-export const updateBar = async (id: number, bar: Bar): Promise<Bar> => {
+export const updateBar = async (id: number, bar: BarAdmin): Promise<BarAdmin> => {
   const response = await api.put(`/api/v1/admin/bars/${id}`, bar);
   return response.data;
 };
@@ -78,7 +91,7 @@ export const deleteBar = async (id: number): Promise<void> => {
 };
 
 // Approve a bar (admin only)
-export const approveBar = async (id: number): Promise<Bar> => {
+export const approveBar = async (id: number): Promise<BarAdmin> => {
   const response = await api.post(`/api/v1/admin/bars/${id}/approve`);
   return response.data;
 };
@@ -102,7 +115,7 @@ export const getLatestCheckForBar = async (barId: number): Promise<BarCheck> => 
 };
 
 // Get unapproved bars (admin only)
-export const getUnapprovedBars = async (pageable: Pageable): Promise<PageBar> => {
+export const getUnapprovedBars = async (pageable: Pageable): Promise<PageBarAdmin> => {
   const response = await api.get('/api/v1/admin/bars/unapproved', { params: pageable });
   return response.data;
 };

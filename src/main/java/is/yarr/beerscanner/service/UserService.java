@@ -10,21 +10,18 @@ import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerTrackingRepository;
 import is.yarr.beerscanner.repository.UserRepository;
 import is.yarr.beerscanner.security.UserPrincipal;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Service for user-related operations.
  */
 @Service
-@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
@@ -32,6 +29,14 @@ public class UserService {
     private final BeerRepository beerRepository;
     private final BeerTrackingRepository beerTrackingRepository;
     private final DTOMapperService dtoMapperService;
+
+    public UserService(UserRepository userRepository, BarRepository barRepository, BeerRepository beerRepository, BeerTrackingRepository beerTrackingRepository, DTOMapperService dtoMapperService) {
+        this.userRepository = userRepository;
+        this.barRepository = barRepository;
+        this.beerRepository = beerRepository;
+        this.beerTrackingRepository = beerTrackingRepository;
+        this.dtoMapperService = dtoMapperService;
+    }
 
     /**
      * Get the current user.

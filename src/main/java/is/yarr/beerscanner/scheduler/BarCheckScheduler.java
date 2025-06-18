@@ -4,9 +4,8 @@ import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
 import is.yarr.beerscanner.service.BarCheckService;
 import is.yarr.beerscanner.service.BarService;
+import is.yarr.beerscanner.service.BarWebpageScraperService;
 import is.yarr.beerscanner.service.NotificationService;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.rendering.PDFRenderer;
 import org.imgscalr.Scalr;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -19,11 +18,8 @@ import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -46,11 +42,13 @@ public class BarCheckScheduler {
     private final BarService barService;
     private final BarCheckService barCheckService;
     private final NotificationService notificationService;
+    private final BarWebpageScraperService barWebpageScraperService;
 
-    public BarCheckScheduler(BarService barService, BarCheckService barCheckService, NotificationService notificationService) {
+    public BarCheckScheduler(BarService barService, BarCheckService barCheckService, NotificationService notificationService, BarWebpageScraperService barWebpageScraperService) {
         this.barService = barService;
         this.barCheckService = barCheckService;
         this.notificationService = notificationService;
+        this.barWebpageScraperService = barWebpageScraperService;
     }
 
     /**
@@ -129,11 +127,16 @@ public class BarCheckScheduler {
 
         String finalMenuUrl = bar.getMenuUrl();
 
+        var webScraping = true;
+
         // If XPath is provided, navigate to the page and extract the actual menu URL
+        // If provided, this means this exact XPath is the menu, and web scraping does NOT need to happen
         if (bar.getMenuXPath() != null && !bar.getMenuXPath().isEmpty()) {
             LOGGER.info("Using XPath to extract menu URL from {}", finalMenuUrl);
             finalMenuUrl = extractMenuUrlUsingXPath(finalMenuUrl, bar.getMenuXPath());
             LOGGER.info("Extracted menu URL: {}", finalMenuUrl);
+
+            webScraping = false;
         }
 
         // Determine content type
@@ -143,6 +146,7 @@ public class BarCheckScheduler {
         // TODO: Handle etag
 
         String base64;
+        String contentType = headResponse.contentType;
         if (headResponse.contentType.contains("application/pdf")) {
             // Handle PDF
             LOGGER.info("Processing PDF menu from {}", finalMenuUrl);
@@ -151,17 +155,30 @@ public class BarCheckScheduler {
             // Handle image
             LOGGER.info("Processing image menu from {}", finalMenuUrl);
             base64 = processImageMenu(finalMenuUrl);
+        } else if (headResponse.contentType.contains("text/html")) {
+            if (!webScraping) {
+                throw new RuntimeException("Web scraping required for text/html content type, but XPath was provided.");
+            }
+
+            if (!bar.getWebpageSettings().isProcessAsText()) {
+                // If the bar has a webpage settings that does not process as text, we need to scrape the webpage
+                LOGGER.info("Processing bar webpage for {}", finalMenuUrl);
+                contentType = "image/png";
+                throw new RuntimeException("Extracted image processing not implemented yet, please implement the barWebpageScraperService.processBarWebpage method.");
+//                base64 = barWebpageScraperService.processBarWebpage(bar);
+            } else {
+                LOGGER.info("Fetching text menu from {}", finalMenuUrl);
+                contentType = "text/plain";
+                base64 = barWebpageScraperService.processTextualBarWebpage(bar);
+
+                System.out.println("base64 = " + base64);
+                System.out.println("contentType = " + contentType);
+            }
         } else {
             throw new RuntimeException("Unsupported content type: " + headResponse.contentType);
         }
 
-        return new MenuContent(base64, headResponse.contentType);
-
-//        else {
-//            // Handle text (current implementation)
-//            LOGGER.info("Processing text menu from {}", finalMenuUrl);
-//            return fetchTextContent(finalMenuUrl);
-//        }
+        return new MenuContent(base64, contentType);
     }
 
     /**
@@ -187,10 +204,10 @@ public class BarCheckScheduler {
 
         // Handle relative URLs
         if (href.startsWith("//")) {
-            URL url = new URL(pageUrl);
+            URL url = URI.create(pageUrl).toURL();
             href = url.getProtocol() + ":" + href;
         } else if (href.startsWith("/")) {
-            URL url = new URL(pageUrl);
+            URL url = URI.create(pageUrl).toURL();
             href = url.getProtocol() + "://" + url.getHost() + href;
         }
 
@@ -245,16 +262,9 @@ public class BarCheckScheduler {
      * @throws IOException if an I/O error occurs
      */
     private String processImageMenu(String imageUrl) throws IOException {
-        // Download image
-        BufferedImage originalImage = ImageIO.read(new URL(imageUrl));
+        var originalImage = ImageIO.read(URI.create(imageUrl).toURL());
+        var resizedImage = resizeImage(originalImage, 1000);
 
-        // Resize image to max 1000px
-        BufferedImage resizedImage = resizeImage(originalImage, 1000);
-
-        // Convert to Base64 for OpenAI
-        // Note: The current OpenAI Java library might not fully support the vision API
-        // In a production environment, you would need to use a library that supports the vision API
-        // or make a direct HTTP request to the OpenAI API
         LOGGER.info("Converting image to base64 for OpenAI analysis");
         return imageToBase64(resizedImage);
     }
@@ -266,7 +276,7 @@ public class BarCheckScheduler {
      * @param maxDimension the maximum dimension
      * @return the resized image
      */
-    private BufferedImage resizeImage(BufferedImage originalImage, int maxDimension) {
+    public static BufferedImage resizeImage(BufferedImage originalImage, int maxDimension) {
         int width = originalImage.getWidth();
         int height = originalImage.getHeight();
 
@@ -288,33 +298,11 @@ public class BarCheckScheduler {
      * @return the base64 string
      * @throws IOException if an I/O error occurs
      */
-    private String imageToBase64(BufferedImage image) throws IOException {
+    public static String imageToBase64(BufferedImage image) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         ImageIO.write(image, "png", outputStream);
         byte[] imageBytes = outputStream.toByteArray();
         return Base64.getEncoder().encodeToString(imageBytes);
-    }
-
-    /**
-     * Fetch text content from a URL.
-     *
-     * @param url the URL
-     * @return the text content
-     * @throws IOException if an I/O error occurs
-     */
-    private String fetchTextContent(String url) throws IOException, URISyntaxException {
-        HttpURLConnection connection = (HttpURLConnection) new URI(url).toURL().openConnection();
-        connection.setRequestMethod("GET");
-
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-        }
-
-        return content.toString();
     }
 
     /**

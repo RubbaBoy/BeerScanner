@@ -1,8 +1,8 @@
 package is.yarr.beerscanner.repository;
 
+import is.yarr.beerscanner.dto.ScraperStatsDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.ScraperStats;
-import is.yarr.beerscanner.dto.ScraperStatsDTO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

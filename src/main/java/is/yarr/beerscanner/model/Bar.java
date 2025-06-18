@@ -1,6 +1,18 @@
 package is.yarr.beerscanner.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -78,6 +90,9 @@ public class Bar {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Embedded
+    private BarWebpageSettings webpageSettings;
+
     // Default constructor
     public Bar() {
     }
@@ -87,7 +102,7 @@ public class Bar {
                String lastMenuHash, LocalDateTime lastCheckedAt, boolean isApproved,
                Set<Beer> currentBeers, Set<Beer> pastBeers, Set<User> trackedBy,
                Set<BarCheck> checks, User requestedBy, LocalDateTime createdAt,
-               LocalDateTime updatedAt) {
+               LocalDateTime updatedAt, BarWebpageSettings webpageSettings) {
         this.id = id;
         this.name = name;
         this.location = location;
@@ -104,6 +119,7 @@ public class Bar {
         this.requestedBy = requestedBy;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.webpageSettings = webpageSettings;
     }
 
     // Builder pattern implementation
@@ -176,6 +192,10 @@ public class Bar {
         return updatedAt;
     }
 
+    public BarWebpageSettings getWebpageSettings() {
+        return webpageSettings;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -241,6 +261,10 @@ public class Bar {
         this.updatedAt = updatedAt;
     }
 
+    public void setWebpageSettings(BarWebpageSettings webpageSettings) {
+        this.webpageSettings = webpageSettings;
+    }
+
     // equals and hashCode
     @Override
     public boolean equals(Object o) {
@@ -277,6 +301,7 @@ public class Bar {
 //                ", requestedBy=" + requestedBy +
 //                ", createdAt=" + createdAt +
 //                ", updatedAt=" + updatedAt +
+                ", webpageSettings=" + webpageSettings +
                 '}';
     }
 
@@ -298,6 +323,7 @@ public class Bar {
         private User requestedBy;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
+        private BarWebpageSettings webpageSettings = new BarWebpageSettings();
 
         public BarBuilder id(Long id) {
             this.id = id;
@@ -379,10 +405,15 @@ public class Bar {
             return this;
         }
 
+        public BarBuilder webpageSettings(BarWebpageSettings webpageSettings) {
+            this.webpageSettings = webpageSettings;
+            return this;
+        }
+
         public Bar build() {
             return new Bar(id, name, location, aiInstructions, menuUrl, menuXPath, lastMenuHash,
                     lastCheckedAt, isApproved, currentBeers, pastBeers,
-                    trackedBy, checks, requestedBy, createdAt, updatedAt);
+                    trackedBy, checks, requestedBy, createdAt, updatedAt, webpageSettings);
         }
     }
 }

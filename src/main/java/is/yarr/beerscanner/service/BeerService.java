@@ -7,7 +7,6 @@ import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerRequestRepository;
 import is.yarr.beerscanner.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,6 @@ import java.util.Set;
  * Service for beer-related operations.
  */
 @Service
-@RequiredArgsConstructor
 public class BeerService {
 
     private final BeerRepository beerRepository;
@@ -179,6 +177,13 @@ public class BeerService {
         for (var rawBeerType : rawBeerTypes) {
             beerTypes.add(rawBeerType.toLowerCase());
         }
+    }
+
+    public BeerService(BeerRepository beerRepository, BarRepository barRepository, BeerRequestRepository beerRequestRepository, UserRepository userRepository) {
+        this.beerRepository = beerRepository;
+        this.barRepository = barRepository;
+        this.beerRequestRepository = beerRequestRepository;
+        this.userRepository = userRepository;
     }
 
     /**

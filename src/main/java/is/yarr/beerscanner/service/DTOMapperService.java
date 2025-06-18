@@ -71,8 +71,8 @@ public class DTOMapperService {
                 .description(beer.getDescription())
                 .createdAt(beer.getCreatedAt())
                 .updatedAt(beer.getUpdatedAt())
-                .availableAt(beer.getAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
-                .previouslyAvailableAt(beer.getPreviouslyAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
+                .availableAt(beer.getAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
+                .previouslyAvailableAt(beer.getPreviouslyAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
                 .build();
     }
 
@@ -138,6 +138,7 @@ public class DTOMapperService {
                 .id(bar.getId())
                 .name(bar.getName())
                 .location(bar.getLocation())
+                .currentBeerCount(bar.getCurrentBeers().size())
                 .lastCheckedAt(bar.getLastCheckedAt())
                 .build();
     }
@@ -157,6 +158,7 @@ public class DTOMapperService {
                 .id(bar.getId())
                 .name(bar.getName())
                 .location(bar.getLocation())
+                .currentBeerCount(bar.getCurrentBeers().size())
                 .lastCheckedAt(bar.getLastCheckedAt())
                 // Admin parts
                 .aiInstructions(bar.getAiInstructions())

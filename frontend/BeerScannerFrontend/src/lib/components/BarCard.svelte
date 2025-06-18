@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { formatDistanceToNow } from 'date-fns';
-  import type { Bar } from '$lib/types';
-  import { currentUser, trackedBars } from '$lib/stores';
-  import { trackBar, untrackBar } from '$lib/services/barService';
+  import type {Bar} from '$lib/types';
+  import {currentUser, trackedBars} from '$lib/stores';
+  import {trackBar, untrackBar} from '$lib/services/barService';
   import {formatFromNowDate} from "$lib/utils/formatting";
 
   let { bar, showActions = true } = $props<{
@@ -77,9 +76,13 @@
     <p class="text-gray-600 mb-4">{bar.location}</p>
 
     <div class="flex justify-between text-sm text-gray-500">
-      <span>Last updated: {formatFromNowDate(bar.lastCheckedAt)}</span>
-      <span>{bar.currentBeers?.length || 0} beers available</span>
+      <div class="flex flex-col items-start">
+        <span>Last updated:</span>
+        <span>{formatFromNowDate(bar.lastCheckedAt)}</span>
+      </div>
+      <span>{bar.currentBeerCount || 0} beers available</span>
     </div>
+
 
     {#if bar.currentBeers && bar.currentBeers.length > 0}
       <div class="mt-4">

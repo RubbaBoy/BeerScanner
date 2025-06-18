@@ -49,7 +49,7 @@ public class OpenAIService {
             ResponseInputItem messageInputItem;
 
             if (contentType.equals("text/plain")) {
-                var textt = """
+                var beerExtractionMessage = """
                                 Extract the beers from the JSON-extracted menu below:
                                 
                                 ```
@@ -57,12 +57,9 @@ public class OpenAIService {
                                 ```
                                 """.formatted(menuContent);
 
-                System.out.println("Message length: " + textt.length());
-                System.out.println("textt = \n" + textt);
-
                 messageInputItem = ResponseInputItem.ofMessage(ResponseInputItem.Message.builder()
                         .role(ResponseInputItem.Message.Role.USER)
-                        .addInputTextContent(textt)
+                        .addInputTextContent(beerExtractionMessage)
                         .build());
             } else {
                 var inputFile = ResponseInputFile.builder()

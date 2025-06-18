@@ -21,6 +21,7 @@ export interface Bar {
   name: string
   location: string;
   lastCheckedAt: string;
+  currentBeerCount: number
 }
 
 // Beer type

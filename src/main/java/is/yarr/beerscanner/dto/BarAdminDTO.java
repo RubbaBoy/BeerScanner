@@ -10,6 +10,7 @@ public class BarAdminDTO {
     private Long id;
     private String name;
     private String location;
+    private int currentBeerCount;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastCheckedAt;
@@ -38,10 +39,11 @@ public class BarAdminDTO {
     public BarAdminDTO() {
     }
 
-    public BarAdminDTO(Long id, String name, String location, LocalDateTime lastCheckedAt, String aiInstructions, String menuUrl, String menuXPath, String lastMenuHash, boolean isApproved, LocalDateTime createdAt, LocalDateTime updatedAt, String menuComponentXPath, String ageVerificationXPath, String cleanupScript, boolean processAsText) {
+    public BarAdminDTO(Long id, String name, String location, int currentBeerCount, LocalDateTime lastCheckedAt, String aiInstructions, String menuUrl, String menuXPath, String lastMenuHash, boolean isApproved, LocalDateTime createdAt, LocalDateTime updatedAt, String menuComponentXPath, String ageVerificationXPath, String cleanupScript, boolean processAsText) {
         this.id = id;
         this.name = name;
         this.location = location;
+        this.currentBeerCount = currentBeerCount;
         this.lastCheckedAt = lastCheckedAt;
         this.aiInstructions = aiInstructions;
         this.menuUrl = menuUrl;
@@ -78,6 +80,14 @@ public class BarAdminDTO {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public int getCurrentBeerCount() {
+        return currentBeerCount;
+    }
+
+    public void setCurrentBeerCount(int currentBeerCount) {
+        this.currentBeerCount = currentBeerCount;
     }
 
     public LocalDateTime getLastCheckedAt() {
@@ -186,6 +196,7 @@ public class BarAdminDTO {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", location='" + location + '\'' +
+                ", currentBeerCount=" + currentBeerCount +
                 ", lastCheckedAt=" + lastCheckedAt +
                 ", aiInstructions='" + aiInstructions + '\'' +
                 ", menuUrl='" + menuUrl + '\'' +
@@ -205,6 +216,7 @@ public class BarAdminDTO {
         private Long id;
         private String name;
         private String location;
+        private int currentBeerCount;
         private LocalDateTime lastCheckedAt;
         private String aiInstructions;
         private String menuUrl;
@@ -230,6 +242,11 @@ public class BarAdminDTO {
 
         public BarAdminDTOBuilder location(String location) {
             this.location = location;
+            return this;
+        }
+
+        public BarAdminDTOBuilder currentBeerCount(int currentBeerCount) {
+            this.currentBeerCount = currentBeerCount;
             return this;
         }
 
@@ -294,7 +311,7 @@ public class BarAdminDTO {
         }
 
         public BarAdminDTO build() {
-            return new BarAdminDTO(id, name, location, lastCheckedAt, aiInstructions, menuUrl, menuXPath,
+            return new BarAdminDTO(id, name, location, currentBeerCount, lastCheckedAt, aiInstructions, menuUrl, menuXPath,
                     lastMenuHash, isApproved, createdAt, updatedAt,
                     menuComponentXPath, ageVerificationXPath, cleanupScript, processAsText);
         }

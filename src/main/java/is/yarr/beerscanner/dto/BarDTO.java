@@ -11,6 +11,7 @@ public class BarDTO {
     private Long id;
     private String name;
     private String location;
+    private int currentBeerCount;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastCheckedAt;
@@ -18,10 +19,11 @@ public class BarDTO {
     public BarDTO() {
     }
 
-    public BarDTO(Long id, String name, String location, LocalDateTime lastCheckedAt) {
+    public BarDTO(Long id, String name, String location, int currentBeerCount, LocalDateTime lastCheckedAt) {
         this.id = id;
         this.name = name;
         this.location = location;
+        this.currentBeerCount = currentBeerCount;
         this.lastCheckedAt = lastCheckedAt;
     }
 
@@ -37,6 +39,10 @@ public class BarDTO {
         return location;
     }
 
+    public int getCurrentBeerCount() {
+        return currentBeerCount;
+    }
+
     public LocalDateTime getLastCheckedAt() {
         return lastCheckedAt;
     }
@@ -49,6 +55,7 @@ public class BarDTO {
         private Long id;
         private String name;
         private String location;
+        private int currentBeerCount;
         private LocalDateTime lastCheckedAt;
 
         BarDTOBuilder() {
@@ -69,13 +76,18 @@ public class BarDTO {
             return this;
         }
 
+        public BarDTOBuilder currentBeerCount(int currentBeerCount) {
+            this.currentBeerCount = currentBeerCount;
+            return this;
+        }
+
         public BarDTOBuilder lastCheckedAt(LocalDateTime lastCheckedAt) {
             this.lastCheckedAt = lastCheckedAt;
             return this;
         }
 
         public BarDTO build() {
-            return new BarDTO(id, name, location, lastCheckedAt);
+            return new BarDTO(id, name, location, currentBeerCount, lastCheckedAt);
         }
     }
 }

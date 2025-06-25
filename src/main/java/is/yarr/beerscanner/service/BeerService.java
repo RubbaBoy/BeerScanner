@@ -2,6 +2,7 @@ package is.yarr.beerscanner.service;
 
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
+import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -231,7 +233,7 @@ public class BeerService {
         return existingBeer.orElseGet(() -> beerRepository.save(beer));
 
     }
-    
+
     @Transactional
     public void requestBeer(BeerRequest beerRequest) {
         // Check if beer request already exists
@@ -424,5 +426,65 @@ public class BeerService {
         }
 
         return type;
+    }
+
+    /**
+     * Get all aliases for a beer.
+     *
+     * @param beerId the beer ID
+     * @return a list of beer aliases
+     */
+    public List<BeerAlias> getBeerAliases(Long beerId) {
+        Beer beer = getBeerById(beerId);
+        return new ArrayList<>(beer.getAliases());
+    }
+
+    /**
+     * Add an alias to a beer.
+     *
+     * @param beerId the beer ID
+     * @param name the alias name
+     * @param brewery the alias brewery
+     * @return the created beer alias
+     */
+    @Transactional
+    public BeerAlias addBeerAlias(Long beerId, String name, String brewery) {
+        Beer beer = getBeerById(beerId);
+
+        // Check if alias already exists
+        for (BeerAlias alias : beer.getAliases()) {
+            if (alias.getName().equalsIgnoreCase(name) && alias.getBrewery().equalsIgnoreCase(brewery)) {
+                return alias;
+            }
+        }
+
+        BeerAlias beerAlias = BeerAlias.builder()
+                .name(name)
+                .brewery(brewery)
+                .beer(beer)
+                .build();
+
+        beer.getAliases().add(beerAlias);
+        beerRepository.save(beer);
+
+        return beerAlias;
+    }
+
+    /**
+     * Delete an alias from a beer.
+     *
+     * @param aliasId the alias ID
+     */
+    @Transactional
+    public void deleteBeerAlias(Long aliasId) {
+        // Find the beer that has this alias
+        Beer beer = beerRepository.findAll().stream()
+                .filter(b -> b.getAliases().stream().anyMatch(a -> a.getId().equals(aliasId)))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Beer alias not found with ID: " + aliasId));
+
+        // Remove the alias
+        beer.getAliases().removeIf(alias -> alias.getId().equals(aliasId));
+        beerRepository.save(beer);
     }
 }

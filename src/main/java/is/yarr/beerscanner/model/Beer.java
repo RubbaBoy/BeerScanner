@@ -53,6 +53,9 @@ public class Beer {
     @OneToMany(mappedBy = "beer", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BeerTracking> trackings = new HashSet<>();
 
+    @OneToMany(mappedBy = "beer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BeerAlias> aliases = new HashSet<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -68,7 +71,7 @@ public class Beer {
     // All-args constructor
     public Beer(Long id, String name, String type, String brewery, Double abv,
                 String description, Set<Bar> availableAt, Set<Bar> previouslyAvailableAt,
-                Set<BeerTracking> trackings, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                Set<BeerTracking> trackings, Set<BeerAlias> aliases, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -78,6 +81,7 @@ public class Beer {
         this.availableAt = availableAt != null ? availableAt : new HashSet<>();
         this.previouslyAvailableAt = previouslyAvailableAt != null ? previouslyAvailableAt : new HashSet<>();
         this.trackings = trackings != null ? trackings : new HashSet<>();
+        this.aliases = aliases != null ? aliases : new HashSet<>();
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -124,6 +128,10 @@ public class Beer {
         return trackings;
     }
 
+    public Set<BeerAlias> getAliases() {
+        return aliases;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -167,6 +175,10 @@ public class Beer {
 
     public void setTrackings(Set<BeerTracking> trackings) {
         this.trackings = trackings != null ? trackings : new HashSet<>();
+    }
+
+    public void setAliases(Set<BeerAlias> aliases) {
+        this.aliases = aliases != null ? aliases : new HashSet<>();
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
@@ -220,6 +232,7 @@ public class Beer {
         private Set<Bar> availableAt = new HashSet<>();
         private Set<Bar> previouslyAvailableAt = new HashSet<>();
         private Set<BeerTracking> trackings = new HashSet<>();
+        private Set<BeerAlias> aliases = new HashSet<>();
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -268,6 +281,11 @@ public class Beer {
             return this;
         }
 
+        public BeerBuilder aliases(Set<BeerAlias> aliases) {
+            this.aliases = aliases != null ? aliases : new HashSet<>();
+            return this;
+        }
+
         public BeerBuilder createdAt(LocalDateTime createdAt) {
             this.createdAt = createdAt;
             return this;
@@ -280,7 +298,7 @@ public class Beer {
 
         public Beer build() {
             return new Beer(id, name, type, brewery, abv, description,
-                    availableAt, previouslyAvailableAt, trackings,
+                    availableAt, previouslyAvailableAt, trackings, aliases,
                     createdAt, updatedAt);
         }
     }

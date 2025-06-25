@@ -271,7 +271,7 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <a href={`/beers/${beer.id}`} class="text-indigo-600 hover:text-indigo-900 mr-4">View</a>
-                <a href={`/admin/beers/edit/${beer.id}`} class="text-amber-600 hover:text-amber-700 mr-4">Edit</a>
+                <a href={`/admin/beers/${beer.id}`} class="text-amber-600 hover:text-amber-700 mr-4">Edit</a>
                 <button 
                   onclick={() => handleDeleteBeer(beer.id)}
                   disabled={isActionLoading}

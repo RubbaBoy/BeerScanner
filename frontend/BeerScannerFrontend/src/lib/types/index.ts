@@ -45,6 +45,20 @@ export interface BeerExtended extends Beer {
   previouslyAvailableAt: Bar[];
 }
 
+export interface BeerAlias {
+  id: number;
+  name: string;
+  brewery: string;
+  beerId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BeerAliasAdd {
+  name: string;
+  brewery: string;
+}
+
 // Beer request type
 export interface BeerRequest {
   id?: number;

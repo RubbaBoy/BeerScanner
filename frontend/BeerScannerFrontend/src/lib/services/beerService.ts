@@ -9,7 +9,8 @@ import type {
   BeerRequest,
   PageBeerRequest,
   PageBeerExtended,
-  BeerExtended
+  BeerExtended,
+  BeerAlias
 } from '$lib/types';
 
 // Get all beers with pagination
@@ -376,3 +377,25 @@ export const getBeerTypes = (): string[] => {
   // Remove duplicates while preserving order
   return Array.from(new Set(flattenedTypes));
 }
+
+// Beer Aliases functions
+
+// Get all aliases for a beer
+export const getBeerAliases = async (beerId: number): Promise<BeerAlias[]> => {
+  const response = await api.get(`/api/v1/admin/beers/${beerId}/aliases`);
+  return response.data;
+};
+
+// Add an alias to a beer
+export const addBeerAlias = async (beerId: number, name: string, brewery: string): Promise<BeerAlias> => {
+  const response = await api.post(`/api/v1/admin/beers/${beerId}/aliases`, {
+    name,
+    brewery
+  });
+  return response.data;
+};
+
+// Delete an alias from a beer
+export const deleteBeerAlias = async (aliasId: number): Promise<void> => {
+  await api.delete(`/api/v1/admin/beers/aliases/${aliasId}`);
+};

@@ -1,11 +1,15 @@
 package is.yarr.beerscanner.controller;
 
 import is.yarr.beerscanner.dto.BarDTO;
+import is.yarr.beerscanner.dto.BeerAliasAddDTO;
+import is.yarr.beerscanner.dto.BeerAliasDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
 import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.model.Beer;
+import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
 import is.yarr.beerscanner.security.UserPrincipal;
+import is.yarr.beerscanner.service.BeerAliasService;
 import is.yarr.beerscanner.service.BeerService;
 import is.yarr.beerscanner.service.DTOMapperService;
 import is.yarr.beerscanner.service.UserService;
@@ -36,11 +40,13 @@ public class BeerController {
     private final BeerService beerService;
     private final UserService userService;
     private final DTOMapperService dtoMapperService;
+    private final BeerAliasService beerAliasService;
 
-    public BeerController(BeerService beerService, UserService userService, DTOMapperService dtoMapperService) {
+    public BeerController(BeerService beerService, UserService userService, DTOMapperService dtoMapperService, BeerAliasService beerAliasService) {
         this.beerService = beerService;
         this.userService = userService;
         this.dtoMapperService = dtoMapperService;
+        this.beerAliasService = beerAliasService;
     }
 
     /**
@@ -328,5 +334,51 @@ public class BeerController {
 
         Beer beer = beerService.findOrCreateBeer(name, brewery, type, abv, description);
         return ResponseEntity.ok(dtoMapperService.toDTO(beer));
+    }
+
+    /**
+     * Get all aliases for a beer (admin only).
+     *
+     * @param beerId the beer ID
+     * @return a list of beer alias DTOs
+     */
+    @GetMapping("/api/v1/admin/beers/{beerId}/aliases")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<BeerAliasDTO>> getBeerAliases(@PathVariable Long beerId) {
+        List<BeerAlias> beerAliases = beerAliasService.getBeerAliases(beerId);
+        List<BeerAliasDTO> beerAliasDTOs = beerAliases.stream()
+                .map(dtoMapperService::toDTO)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(beerAliasDTOs);
+    }
+
+    /**
+     * Add an alias to a beer (admin only).
+     *
+     * @param beerId the beer ID
+     * @param beerAliasAddDTO the beer alias DTO
+     * @return the created beer alias DTO
+     */
+    @PostMapping("/api/v1/admin/beers/{beerId}/aliases")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BeerAliasDTO> addBeerAlias(
+            @PathVariable Long beerId,
+            @RequestBody BeerAliasAddDTO beerAliasAddDTO) {
+
+        BeerAlias beerAlias = beerAliasService.addBeerAlias(beerId, beerAliasAddDTO.getName(), beerAliasAddDTO.getBrewery());
+        return ResponseEntity.ok(dtoMapperService.toDTO(beerAlias));
+    }
+
+    /**
+     * Delete an alias from a beer (admin only).
+     *
+     * @param aliasId the alias ID
+     * @return no content
+     */
+    @DeleteMapping("/api/v1/admin/beers/aliases/{aliasId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteBeerAlias(@PathVariable Long aliasId) {
+        beerAliasService.deleteBeerAlias(aliasId);
+        return ResponseEntity.noContent().build();
     }
 }

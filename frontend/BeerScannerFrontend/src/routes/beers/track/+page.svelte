@@ -6,13 +6,11 @@
   import type {Beer, Bar, BeerRequest} from '$lib/types';
   import { clickOutside } from '$lib/actions/clickOutside';
   import CreateBeerForm from "$lib/components/CreateBeerForm.svelte";
+  import BeerSearch from "$lib/components/BeerSearch.svelte";
 
 
   // State variables
-  let searchTerm = $state('');
-  let searchResults: Beer[] = $state([]);
   let allBars: Bar[] = $state([]);
-  let isSearching = $state(false);
   let selectedBeer: Beer | null = $state(null);
   let selectedBar: Bar | null = $state(null);
   let isLoading = $state(true);
@@ -42,43 +40,11 @@
     }
   });
 
-  // Search for beers
-  const handleSearch = async () => {
-    if (!searchTerm.trim()) {
-      searchResults = []; // Clear results if search term is empty
-      return;
-    }
-
-    isSearching = true;
-    error = null;
-
-    try {
-      const response = await searchBeers(searchTerm, { page: 0, size: 10, sort: ['name,asc'] });
-      searchResults = response.content;
-
-      // We don't set an error message for no results anymore
-      // since we're showing a "Request New Beer" button instead
-    } catch (e) {
-      console.error('Failed to search beers:', e);
-      error = 'Failed to search beers. Please try again later.';
-    } finally {
-      isSearching = false;
-    }
+  // Handle create beer request
+  const handleCreateBeer = (beerName: string) => {
+    newBeerInitialName = beerName;
+    showNewBeerForm = true;
   };
-
-  // Select a beer from search results
-  const selectBeer = (beer: Beer) => {
-    selectedBeer = beer;
-    searchResults = [];
-    searchTerm = '';
-  };
-
-  const closeSearchResultsPopup = () => {
-    console.log('Closing search results popup');
-    searchResults = [];
-    searchTerm = '';
-  };
-
 
   // Select a bar
   const selectBar = (bar: Bar | null) => {
@@ -114,16 +80,6 @@
     } finally {
       isSubmitting = false;
     }
-  };
-
-  // Show the new beer form
-  const showRequestNewBeerForm = () => {
-    showNewBeerForm = true;
-
-    // Pre-fill the name with the search term
-    newBeerInitialName = searchTerm;
-    error = null;
-    closeSearchResultsPopup();
   };
 
   // Request and track a new beer
@@ -187,79 +143,13 @@
             <div>
                 <label for="beer" class="block text-sm font-medium text-gray-700 mb-1">Select a Beer</label>
 
-                {#if selectedBeer}
-                    <div class="flex items-center justify-between p-3 border rounded-md bg-gray-50">
-                        <div>
-                            <span class="font-medium">{selectedBeer.name}</span>
-                            {#if selectedBeer.brewery}
-                                <span class="text-gray-500 ml-2">by {selectedBeer.brewery}</span>
-                            {/if}
-                        </div>
-                        <button
-                                type="button"
-                                onclick={() => selectedBeer = null}
-                                class="text-gray-500 hover:text-gray-700"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    </div>
-                {:else}
-                    <div class="relative">
-                        <input
-                                type="text"
-                                id="beer"
-                                placeholder="Search for a beer..."
-                                bind:value={searchTerm}
-                                oninput={handleSearch}
-                                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-amber-500 focus:border-amber-500"
-                        />
+                <BeerSearch
+                        bind:selectedBeer
+                        onCreateBeer={handleCreateBeer}
+                        showCreateOption={true}
+                        placeholder="Search for a beer..."
+                />
 
-                        {#if isSearching}
-                            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-amber-500"></div>
-                            </div>
-                        {/if}
-
-                        {#if searchResults.length > 0}
-                            <div class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-300 max-h-60 overflow-auto" use:clickOutside={closeSearchResultsPopup}>
-                                <ul class="py-1">
-                                    {#each searchResults as beer}
-                                        <li>
-                                            <button
-                                                    type="button"
-                                                    onclick={() => selectBeer(beer)}
-                                                    class="w-full text-left px-4 py-2 hover:bg-gray-100"
-                                            >
-                                                <div class="font-medium">{beer.name}</div>
-                                                {#if beer.brewery}
-                                                    <div class="text-sm text-gray-500">{beer.brewery}</div>
-                                                {/if}
-                                            </button>
-                                        </li>
-                                    {/each}
-                                </ul>
-                            </div>
-                        {:else if searchTerm.trim() && !isSearching && searchResults.length === 0}
-                            <div class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md border border-gray-300" use:clickOutside={closeSearchResultsPopup}>
-                                <div class="p-4 text-center">
-                                    <p class="text-gray-600 mb-3">No beers found matching "{searchTerm}".</p>
-                                    <button
-                                            type="button"
-                                            onclick={showRequestNewBeerForm}
-                                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-                                        </svg>
-                                        Request New Beer
-                                    </button>
-                                </div>
-                            </div>
-                        {/if}
-                    </div>
-                {/if}
             </div>
 
             <!-- Bar selection -->

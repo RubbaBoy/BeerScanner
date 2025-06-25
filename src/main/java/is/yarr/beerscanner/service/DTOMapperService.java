@@ -3,6 +3,7 @@ package is.yarr.beerscanner.service;
 import is.yarr.beerscanner.dto.BarAdminDTO;
 import is.yarr.beerscanner.dto.BarCheckDTO;
 import is.yarr.beerscanner.dto.BarDTO;
+import is.yarr.beerscanner.dto.BeerAliasDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
 import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.dto.BeerTrackingDTO;
@@ -12,6 +13,7 @@ import is.yarr.beerscanner.dto.UserDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
 import is.yarr.beerscanner.model.Beer;
+import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
 import is.yarr.beerscanner.model.BeerTracking;
 import is.yarr.beerscanner.model.Notification;
@@ -345,5 +347,38 @@ public class DTOMapperService {
                 .averageCheckTime(stats.getAverageCheckTime())
                 .lastCheckTime(stats.getLastCheckTime())
                 .build();
+    }
+
+    /**
+     * Convert a BeerAlias entity to a BeerAliasDTO.
+     *
+     * @param beerAlias the BeerAlias entity
+     * @return the BeerAliasDTO
+     */
+    public BeerAliasDTO toDTO(BeerAlias beerAlias) {
+        if (beerAlias == null) {
+            return null;
+        }
+
+        return BeerAliasDTO.builder()
+                .id(beerAlias.getId())
+                .name(beerAlias.getName())
+                .brewery(beerAlias.getBrewery())
+                .beerId(beerAlias.getBeer().getId())
+                .createdAt(beerAlias.getCreatedAt())
+                .updatedAt(beerAlias.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Convert a list of BeerAlias entities to a list of BeerAliasDTOs.
+     *
+     * @param beerAliases the list of BeerAlias entities
+     * @return the list of BeerAliasDTOs
+     */
+    public List<BeerAliasDTO> toBeerAliasDTOList(List<BeerAlias> beerAliases) {
+        return beerAliases.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 }

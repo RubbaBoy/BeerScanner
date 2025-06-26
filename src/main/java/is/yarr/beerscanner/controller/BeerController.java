@@ -315,6 +315,19 @@ public class BeerController {
     }
 
     /**
+     * Merges the <code>id</code> beer into the given <code>mergeId</code> beer.
+     *
+     * @param id the beer ID
+     * @return no content
+     */
+    @PutMapping("/api/v1/admin/beers/{id}/merge/{mergeId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> mergeBeer(@PathVariable Long id, @PathVariable Long mergeId) {
+        beerService.mergeBeers(id, mergeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Find or create a beer (admin only).
      *
      * @param name the beer name

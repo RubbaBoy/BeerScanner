@@ -4,9 +4,11 @@ import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
+import is.yarr.beerscanner.model.BeerTracking;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerRequestRepository;
+import is.yarr.beerscanner.repository.BeerTrackingRepository;
 import is.yarr.beerscanner.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -181,11 +183,14 @@ public class BeerService {
         }
     }
 
-    public BeerService(BeerRepository beerRepository, BarRepository barRepository, BeerRequestRepository beerRequestRepository, UserRepository userRepository) {
+    private final BeerTrackingRepository beerTrackingRepository;
+
+    public BeerService(BeerRepository beerRepository, BarRepository barRepository, BeerRequestRepository beerRequestRepository, UserRepository userRepository, BeerTrackingRepository beerTrackingRepository) {
         this.beerRepository = beerRepository;
         this.barRepository = barRepository;
         this.beerRequestRepository = beerRequestRepository;
         this.userRepository = userRepository;
+        this.beerTrackingRepository = beerTrackingRepository;
     }
 
     /**
@@ -316,8 +321,49 @@ public class BeerService {
         }
         beer.getAvailableAt().clear();
 
+        // Remove tracking for this beer
+        beerTrackingRepository.deleteAll(beerTrackingRepository.findByBeer(beer));
 
         beerRepository.delete(beer);
+    }
+
+    /**
+     * Merge two beers into one. The first beer will be kept, and the second beer will be deleted. All instances of the
+     * second beer will be replaced with the first beer.
+     *
+     * @param beerId The beer ID to keep
+     * @param beerToMergeId The beer ID to merge into the first beer (This <b>DELETES</b> the beer)
+     */
+    @Transactional
+    public void mergeBeers(Long beerId, Long beerToMergeId) {
+        var beer = getBeerById(beerId);
+        var beerToMerge = getBeerById(beerToMergeId);
+
+        if (beer.getId().equals(beerToMerge.getId())) {
+            throw new IllegalArgumentException("Cannot merge a beer with itself.");
+        }
+
+        // Replace all tracking with the new beer. Users won't see the old beer anymore.
+        // TODO: User may be already tracking the new beer
+        beerTrackingRepository.saveAll(beerTrackingRepository.findByBeer(beerToMerge)
+                .stream()
+                .peek(beerTracking -> beerTracking.setBeer(beer))
+                .toList());
+
+        // Replace all old beer's available bars with the new beer.
+        barRepository.saveAll(beerToMerge.getAvailableAt().stream().peek(bar -> {
+            bar.getCurrentBeers().remove(beerToMerge);
+            bar.getCurrentBeers().add(beer);
+        }).toList());
+
+
+        // Replace all old beer's past bars with the new beer.
+        barRepository.saveAll(beerToMerge.getPreviouslyAvailableAt().stream().peek(bar -> {
+            bar.getPastBeers().remove(beerToMerge);
+            bar.getPastBeers().add(beer);
+        }).toList());
+
+        beerRepository.delete(beerToMerge);
     }
 
     /**

@@ -152,6 +152,11 @@ export const deleteBeer = async (id: number): Promise<void> => {
   await api.delete(`/api/v1/admin/beers/${id}`);
 };
 
+// Merge a beer (admin only)
+export const mergeBeer = async (id: number, mergeWithAndDeleteId: number): Promise<void> => {
+  await api.put(`/api/v1/admin/beers/${id}/merge/${mergeWithAndDeleteId}`);
+};
+
 const beerTypeAbbreviations = [
   [
     "APA",

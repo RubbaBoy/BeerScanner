@@ -7,7 +7,8 @@
     deleteBeer, 
     getBeerAliases, 
     addBeerAlias, 
-    deleteBeerAlias 
+    deleteBeerAlias,
+    mergeBeer
   } from '$lib/services/beerService';
   import type { Beer, BeerExtended, BeerAlias } from '$lib/types';
   import BeerSearch from "$lib/components/BeerSearch.svelte";
@@ -149,28 +150,15 @@
   };
 
   const performMerge = async () => {
-    // if (!mergeTargetId) {
-    //   error = 'Please enter a target beer ID.';
-    //   return;
-    // }
-
-    // const targetId = parseInt(mergeTargetId);
-    // if (isNaN(targetId)) {
-    //   error = 'Please enter a valid beer ID.';
-    //   return;
-    // }
-
     isMerging = true;
     error = null;
 
     console.log(`Merging beer ${beerId} with target beer ${mergeWithBeer.name} ${mergeWithBeer.id}...`);
 
     try {
-      await mergeBeer(beerId, targetId);
+      await mergeBeer(beerId, mergeWithBeer.id);
       success = 'Beer merged successfully.';
       closeMergeModal();
-      // Redirect to the target beer page
-      window.location.href = `/admin/beers/${targetId}`;
     } catch (e) {
       console.error('Failed to merge beer:', e);
       error = 'Failed to merge beer. Please try again later.';

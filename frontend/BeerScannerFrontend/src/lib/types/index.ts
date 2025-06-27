@@ -40,6 +40,15 @@ export interface Beer {
   // previouslyAvailableAt?: BarSimple[];
 }
 
+// Data sent to update a beer
+export interface BeerModify {
+  name: string;
+  type?: string;
+  brewery?: string;
+  abv?: number;
+  description?: string;
+}
+
 export interface BeerExtended extends Beer {
   availableAt: Bar[];
   previouslyAvailableAt: Bar[];
@@ -158,3 +167,15 @@ export type PageBeerRequest = Page<BeerRequest>;
 export type PageBar = Page<Bar>;
 export type PageBarAdmin = Page<BarAdmin>;
 export type PageBarCheck = Page<BarCheck>;
+
+// Converting methods (so extra data isn't sent via the API)
+
+export const createBeerModify = (beer: Beer): BeerModify => {
+  return {
+    name: beer.name,
+    type: beer.type,
+    brewery: beer.brewery,
+    abv: beer.abv,
+    description: beer.description
+  };
+}

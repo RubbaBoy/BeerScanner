@@ -10,7 +10,8 @@
     deleteBeerAlias,
     mergeBeer
   } from '$lib/services/beerService';
-  import type { Beer, BeerExtended, BeerAlias } from '$lib/types';
+  import type {Beer, BeerExtended, BeerAlias, BeerModify} from '$lib/types';
+  import {createBeerModify} from '$lib/types';
   import BeerSearch from "$lib/components/BeerSearch.svelte";
 
   // Get the beer ID from the URL
@@ -24,7 +25,7 @@
   let isDeleting = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
-  let formData = $state<Beer | null>(null);
+  let formData = $state<BeerModify | null>(null);
   let showDeleteConfirmation = $state(false);
 
   // New alias form data
@@ -45,7 +46,7 @@
     
     try {
       beer = await getBeerById(beerId);
-      formData = { ...beer };
+      formData = createBeerModify(beer);
       
       // Fetch beer aliases
       beerAliases = await getBeerAliases(beerId);
@@ -65,6 +66,9 @@
     
     try {
       beer = await updateBeer(beerId, formData);
+
+      // Aliases may have updated
+      beerAliases = await getBeerAliases(beerId);
       success = 'Beer details updated successfully.';
     } catch (e) {
       console.error('Failed to update beer:', e);

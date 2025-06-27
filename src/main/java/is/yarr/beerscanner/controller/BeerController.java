@@ -4,6 +4,7 @@ import is.yarr.beerscanner.dto.BarDTO;
 import is.yarr.beerscanner.dto.BeerAliasAddDTO;
 import is.yarr.beerscanner.dto.BeerAliasDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
+import is.yarr.beerscanner.dto.BeerModifyDTO;
 import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerAlias;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -275,29 +277,23 @@ public class BeerController {
      * Update a beer (admin only).
      *
      * @param id the beer ID
-     * @param beerDTO the updated beer DTO
+     * @param beerModifyDTO the updated beer DTO
      * @return the updated beer DTO
      */
     @PutMapping("/api/v1/admin/beers/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BeerDTO> updateBeer(
             @PathVariable Long id,
-            @RequestBody BeerDTO beerDTO) {
+            @RequestBody BeerModifyDTO beerModifyDTO) {
 
-        if (!beerService.isValidBeerType(beerDTO.getType())) {
-            return ResponseEntity.badRequest().build();
-        }
+        // This is only for admin users, so we can assume the type is valid
+//        if (!beerService.isValidBeerType(beerModifyDTO.getType())) {
+//            return ResponseEntity.badRequest().build();
+//        }
 
-        // Convert DTO to entity
-        Beer beer = Beer.builder()
-                .name(beerDTO.getName())
-                .type(beerService.getAbbreviatedBeerType(beerDTO.getType()))
-                .brewery(beerDTO.getBrewery())
-                .abv(beerDTO.getAbv())
-                .description(beerDTO.getDescription())
-                .build();
+        beerModifyDTO.setType(beerService.getAbbreviatedBeerType(beerModifyDTO.getType()));
 
-        Beer updatedBeer = beerService.updateBeer(id, beer);
+        Beer updatedBeer = beerService.updateBeer(id, beerModifyDTO);
         return ResponseEntity.ok(dtoMapperService.toDTO(updatedBeer));
     }
 
@@ -374,12 +370,16 @@ public class BeerController {
      */
     @PostMapping("/api/v1/admin/beers/{beerId}/aliases")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<BeerAliasDTO> addBeerAlias(
+    public ResponseEntity<?> addBeerAlias(
             @PathVariable Long beerId,
             @RequestBody BeerAliasAddDTO beerAliasAddDTO) {
 
-        BeerAlias beerAlias = beerAliasService.addBeerAlias(beerId, beerAliasAddDTO.getName(), beerAliasAddDTO.getBrewery());
-        return ResponseEntity.ok(dtoMapperService.toDTO(beerAlias));
+        try {
+            var beerAlias = beerAliasService.addBeerAlias(beerId, beerAliasAddDTO.getName(), beerAliasAddDTO.getBrewery());
+            return ResponseEntity.ok(dtoMapperService.toDTO(beerAlias));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**

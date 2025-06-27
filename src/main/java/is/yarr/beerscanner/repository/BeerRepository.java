@@ -90,4 +90,20 @@ public interface BeerRepository extends JpaRepository<Beer, Long> {
      */
     Optional<Beer> findByNameAndBrewery(String name, String brewery);
 
+    /**
+     * Find a beer whose aliases contain the given name and brewery (case-insensitive on both fields).
+     *
+     * @param name    the alias name of the beer
+     * @param brewery the alias brewery of the beer
+     * @return an Optional containing the beer if an alias matches on both fields
+     */
+    @Query("""
+           SELECT b
+           FROM Beer b
+           JOIN b.aliases a
+           WHERE LOWER(a.name) = LOWER(:name)
+             AND LOWER(a.brewery) = LOWER(:brewery)
+           """)
+    Optional<Beer> findByAliasNameAndAliasBrewery(@Param("name") String name, @Param("brewery") String brewery);
+
 }

@@ -10,7 +10,7 @@ import type {
   PageBeerRequest,
   PageBeerExtended,
   BeerExtended,
-  BeerAlias
+  BeerAlias, BeerModify
 } from '$lib/types';
 
 // Get all beers with pagination
@@ -142,8 +142,8 @@ export const findOrCreateBeer = async (
 };
 
 // Update a beer (admin only)
-export const updateBeer = async (id: number, beer: Beer): Promise<Beer> => {
-  const response = await api.put(`/api/v1/admin/beers/${id}`, beer);
+export const updateBeer = async (id: number, beerModify: BeerModify): Promise<Beer> => {
+  const response = await api.put(`/api/v1/admin/beers/${id}`, beerModify);
   return response.data;
 };
 

@@ -1,5 +1,6 @@
 package is.yarr.beerscanner.service;
 
+import is.yarr.beerscanner.dto.BeerModifyDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerAlias;
@@ -284,18 +285,25 @@ public class BeerService {
      * Update a beer.
      *
      * @param id   the beer ID
-     * @param beer the updated beer
+     * @param beerModify the updated beer
      * @return the updated beer
      */
     @Transactional
-    public Beer updateBeer(Long id, Beer beer) {
+    public Beer updateBeer(Long id, BeerModifyDTO beerModify) {
         Beer existingBeer = getBeerById(id);
 
-        existingBeer.setName(beer.getName());
-        existingBeer.setType(beer.getType());
-        existingBeer.setBrewery(beer.getBrewery());
-        existingBeer.setAbv(beer.getAbv());
-        existingBeer.setDescription(beer.getDescription());
+        var updatedNameBrewery = !existingBeer.getName().equals(beerModify.getName()) || !existingBeer.getBrewery().equals(beerModify.getBrewery());
+
+        if (updatedNameBrewery) {
+            // If the name is updated, add an alias for the old name so it can still be found by the AI that messed up
+            addBeerAlias(id, existingBeer.getName(), existingBeer.getBrewery());
+        }
+
+        existingBeer.setName(beerModify.getName());
+        existingBeer.setType(beerModify.getType());
+        existingBeer.setBrewery(beerModify.getBrewery());
+        existingBeer.setAbv(beerModify.getAbv());
+        existingBeer.setDescription(beerModify.getDescription());
 
         return beerRepository.save(existingBeer);
     }
@@ -404,8 +412,10 @@ public class BeerService {
      */
     @Transactional
     public Beer findOrCreateBeer(String name, String brewery, String type, Double abv, String description) {
-        Optional<Beer> existingBeer = beerRepository.findByNameAndBrewery(name, brewery);
+        Optional<Beer> existingBeer = beerRepository.findByNameAndBrewery(name, brewery)
+                .or(() -> beerRepository.findByAliasNameAndAliasBrewery(name, brewery));
 
+        // Update description if the beer already exists and has no description
         if (existingBeer.isPresent()) {
             var beer = existingBeer.get();
             if (description != null && (beer.getDescription() == null || beer.getDescription().isEmpty())) {
@@ -497,11 +507,18 @@ public class BeerService {
     public BeerAlias addBeerAlias(Long beerId, String name, String brewery) {
         Beer beer = getBeerById(beerId);
 
-        // Check if alias already exists
+        // Check if alias already exists on the same beer
         for (BeerAlias alias : beer.getAliases()) {
             if (alias.getName().equalsIgnoreCase(name) && alias.getBrewery().equalsIgnoreCase(brewery)) {
                 return alias;
             }
+        }
+
+        // Do a more strict check for existing aliases on ANY beer
+        var alreadyAliasedBeerOptional = beerRepository.findByAliasNameAndAliasBrewery(name, brewery);
+        if (alreadyAliasedBeerOptional.isPresent()) {
+            var alreadyAliasedBeer = alreadyAliasedBeerOptional.get();
+            throw new IllegalArgumentException("Alias already exists for another beer: %s at %s  ID: %d".formatted(alreadyAliasedBeer.getName(), alreadyAliasedBeer.getBrewery(), alreadyAliasedBeer.getId()));
         }
 
         BeerAlias beerAlias = BeerAlias.builder()

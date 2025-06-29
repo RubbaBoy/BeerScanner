@@ -10,10 +10,21 @@ import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerTrackingRepository;
 import is.yarr.beerscanner.repository.UserRepository;
 import is.yarr.beerscanner.security.UserPrincipal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,6 +34,11 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UserService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserService.class);
+
+    @Value("${app.data-dir}")
+    private String dataDir;
 
     private final UserRepository userRepository;
     private final BarRepository barRepository;
@@ -69,6 +85,42 @@ public class UserService {
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    }
+
+    public ResponseEntity<Resource> getProfilePicture(long userId) {
+        try {
+            if (!userRepository.existsById(userId)) {
+                LOGGER.debug("User ID {} not found for profile picture request", userId);
+                return ResponseEntity.notFound().build();
+            }
+
+            var pictureDir = Paths.get(dataDir, "profile-pictures");
+            var file = pictureDir.resolve("%d.jpg".formatted(userId));
+
+            var resource = new UrlResource(file.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                String contentType = Files.probeContentType(file);
+                // Fallback to a default content type if probe fails
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+
+                LOGGER.debug("Serving profile picture for user ID: {} with content type: {}", userId, contentType);
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .body(resource);
+            } else {
+                LOGGER.debug("File not found at path: {}", file);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (MalformedURLException e) {
+            LOGGER.error("Malformed URL for user ID: {}", userId, e);
+            return ResponseEntity.badRequest().build();
+        } catch (IOException e) {
+            LOGGER.error("Failed to read profile picture for user ID: {}", userId, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     /**

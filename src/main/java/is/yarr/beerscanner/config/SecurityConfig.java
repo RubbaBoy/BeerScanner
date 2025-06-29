@@ -50,7 +50,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authorize -> authorize
                 // Public endpoints
-                .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/api/v1/bars/public/**", "/api/v1/beers/public/**").permitAll()
+                .requestMatchers("/api/v1/auth/**", "/oauth2/**", "/api/v1/bars/public/**", "/api/v1/beers/public/**", "/api/v1/users/profile-picture/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 // Protected endpoints

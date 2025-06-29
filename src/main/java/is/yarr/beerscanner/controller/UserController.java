@@ -10,6 +10,7 @@ import is.yarr.beerscanner.model.User;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.DTOMapperService;
 import is.yarr.beerscanner.service.UserService;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -51,6 +52,17 @@ public class UserController {
         User user = userService.getCurrentUser(userPrincipal);
         var toDto = dtoMapperService.toDTO(user);
         return ResponseEntity.ok(toDto);
+    }
+
+    /**
+     * Serves a user's profile picture.
+     *
+     * @param userId The ID of the user whose profile picture is requested.
+     * @return The profile picture as a resource.
+     */
+    @GetMapping("/profile-picture/{userId}")
+    public ResponseEntity<Resource> getProfilePicture(@PathVariable Long userId) {
+        return userService.getProfilePicture(userId);
     }
 
     /**

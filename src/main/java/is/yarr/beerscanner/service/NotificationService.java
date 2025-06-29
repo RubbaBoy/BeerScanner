@@ -140,10 +140,11 @@ public class NotificationService {
     /**
      * Send bar menu changed notifications.
      *
-     * @param bar the bar
+     * @param bar             the bar
+     * @param barUpdateResult
      */
     @Transactional
-    public void sendBarMenuChangedNotifications(Bar bar) {
+    public void sendBarMenuChangedNotifications(Bar bar, BarCheckService.BarUpdateResult barUpdateResult) {
         // Find users who are tracking this bar
         Set<User> users = bar.getTrackedBy();
 
@@ -156,6 +157,8 @@ public class NotificationService {
                     .type(Notification.NotificationType.MENU_CHANGED)
                     .isRead(false)
                     .isSent(false)
+                    .beersAdded(barUpdateResult.beersAdded())
+                    .beersRemoved(barUpdateResult.beersRemoved())
                     .build();
 
             sendNotification(notification);

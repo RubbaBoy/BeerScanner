@@ -4,16 +4,21 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Entity representing a notification to a user.
@@ -61,6 +66,23 @@ public class Notification {
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "notification_beers_added",
+            joinColumns = @JoinColumn(name = "bar_check_id"),
+            inverseJoinColumns = @JoinColumn(name = "beer_id")
+    )
+    private Set<Beer> beersAdded = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "notification_beers_removed",
+            joinColumns = @JoinColumn(name = "bar_check_id"),
+            inverseJoinColumns = @JoinColumn(name = "beer_id")
+    )
+    private Set<Beer> beersRemoved = new HashSet<>();
+
+
     // Default constructor
     public Notification() {
     }
@@ -68,7 +90,7 @@ public class Notification {
     // All-args constructor
     public Notification(Long id, User user, Bar bar, Beer beer, String title, String message,
                         NotificationType type, boolean isRead, boolean isSent,
-                        LocalDateTime createdAt, LocalDateTime sentAt) {
+                        LocalDateTime createdAt, LocalDateTime sentAt, Set<Beer> beersAdded, Set<Beer> beersRemoved) {
         this.id = id;
         this.user = user;
         this.bar = bar;
@@ -80,6 +102,8 @@ public class Notification {
         this.isSent = isSent;
         this.createdAt = createdAt;
         this.sentAt = sentAt;
+        this.beersAdded = beersAdded != null ? beersAdded : new HashSet<>();
+        this.beersRemoved = beersRemoved != null ? beersRemoved : new HashSet<>();
     }
 
     // Builder pattern implementation
@@ -87,94 +111,108 @@ public class Notification {
         return new NotificationBuilder();
     }
 
-    // Getters
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public User getUser() {
         return user;
     }
 
-    public Bar getBar() {
-        return bar;
-    }
-
-    public Beer getBeer() {
-        return beer;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public NotificationType getType() {
-        return type;
-    }
-
-    public boolean isRead() {
-        return isRead;
-    }
-
-    public boolean isSent() {
-        return isSent;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getSentAt() {
-        return sentAt;
-    }
-
-    // Setters
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Bar getBar() {
+        return bar;
     }
 
     public void setBar(Bar bar) {
         this.bar = bar;
     }
 
+    public Beer getBeer() {
+        return beer;
+    }
+
     public void setBeer(Beer beer) {
         this.beer = beer;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public void setTitle(String title) {
         this.title = title;
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public NotificationType getType() {
+        return type;
     }
 
     public void setType(NotificationType type) {
         this.type = type;
     }
 
+    public boolean isRead() {
+        return isRead;
+    }
+
     public void setRead(boolean read) {
         isRead = read;
+    }
+
+    public boolean isSent() {
+        return isSent;
     }
 
     public void setSent(boolean sent) {
         isSent = sent;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getSentAt() {
+        return sentAt;
+    }
+
     public void setSentAt(LocalDateTime sentAt) {
         this.sentAt = sentAt;
+    }
+
+    public Set<Beer> getBeersAdded() {
+        return beersAdded;
+    }
+
+    public void setBeersAdded(Set<Beer> beersAdded) {
+        this.beersAdded = beersAdded;
+    }
+
+    public Set<Beer> getBeersRemoved() {
+        return beersRemoved;
+    }
+
+    public void setBeersRemoved(Set<Beer> beersRemoved) {
+        this.beersRemoved = beersRemoved;
     }
 
     // equals and hashCode
@@ -232,6 +270,8 @@ public class Notification {
         private boolean isSent;
         private LocalDateTime createdAt;
         private LocalDateTime sentAt;
+        private Set<Beer> beersAdded = new HashSet<>();
+        private Set<Beer> beersRemoved = new HashSet<>();
 
         public NotificationBuilder id(Long id) {
             this.id = id;
@@ -288,9 +328,19 @@ public class Notification {
             return this;
         }
 
+        public NotificationBuilder beersAdded(Set<Beer> beersAdded) {
+            this.beersAdded = beersAdded != null ? beersAdded : new HashSet<>();
+            return this;
+        }
+
+        public NotificationBuilder beersRemoved(Set<Beer> beersRemoved) {
+            this.beersRemoved = beersRemoved != null ? beersRemoved : new HashSet<>();
+            return this;
+        }
+
         public Notification build() {
             return new Notification(id, user, bar, beer, title, message, type,
-                    isRead, isSent, createdAt, sentAt);
+                    isRead, isSent, createdAt, sentAt, beersAdded, beersRemoved);
         }
     }
 

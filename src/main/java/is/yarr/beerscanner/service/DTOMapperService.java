@@ -24,7 +24,10 @@ import is.yarr.beerscanner.model.beer.BarBeerCurrent;
 import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -93,6 +96,18 @@ public class DTOMapperService {
         return beers.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert a list of Beer entities to a list of BeerDTOs.
+     *
+     * @param beers the list of Beer entities
+     * @return the list of BeerDTOs
+     */
+    public Set<BeerDTO> toBeerDTOSet(Set<Beer> beers) {
+        return beers.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -318,6 +333,8 @@ public class DTOMapperService {
                 .user(toDTO(notification.getUser()))
                 .bar(toDTO(notification.getBar()))
                 .beer(toDTO(notification.getBeer()))
+                .beersAdded(toBeerDTOSet(notification.getBeersAdded()))
+                .beersRemoved(toBeerDTOSet(notification.getBeersRemoved()))
                 .build();
     }
 

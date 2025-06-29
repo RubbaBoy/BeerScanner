@@ -1,15 +1,19 @@
 <script lang="ts">
-  import { format, formatDistanceToNow } from 'date-fns';
-  import type { Notification } from '$lib/types';
-  import { markNotificationAsRead } from '$lib/services/notificationService';
-  import { markAsRead } from '$lib/stores/notificationStore';
+  import type {Notification} from '$lib/types';
+  import {markNotificationAsRead} from '$lib/services/notificationService';
+  import {markAsRead} from '$lib/stores/notificationStore';
   import {formatFromNowDate} from "$lib/utils/formatting";
+  import {BeerCard} from "$lib/components/index";
 
   let { notification } = $props<{
     notification: Notification;
   }>();
 
   let isLoading = $state(false);
+  let showBeerDetails = $state(false);
+
+  // Check if notification has beer changes
+  const hasBeerChanges = notification.beersAdded?.length > 0 || notification.beersRemoved?.length > 0;
 
   // Get icon based on notification type
   const getIcon = (type: string) => {
@@ -84,6 +88,10 @@
       isLoading = false;
     }
   };
+
+  const toggleBeerDetails = () => {
+    showBeerDetails = !showBeerDetails;
+  };
 </script>
 
 <div 
@@ -101,6 +109,66 @@
       </div>
 
       <p class="text-gray-700 mt-1">{notification.message}</p>
+
+      {#if hasBeerChanges}
+        <div class="mt-3">
+          <button
+                  onclick={toggleBeerDetails}
+                  class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors duration-200"
+          >
+            <svg class="w-4 h-4 mr-1 transition-transform duration-200 {showBeerDetails ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+            {showBeerDetails ? 'Hide' : 'Show'} Beer Changes
+            {#if notification.beersAdded?.length}
+              <span class="ml-1 text-green-600">(+{notification.beersAdded.length})</span>
+            {/if}
+            {#if notification.beersRemoved?.length}
+              <span class="ml-1 text-red-600">(-{notification.beersRemoved.length})</span>
+            {/if}
+          </button>
+        </div>
+      {/if}
+
+      {#if showBeerDetails && hasBeerChanges}
+        <div class="mt-4 space-y-4">
+          {#if notification.beersAdded?.length > 0}
+            <div>
+              <h4 class="text-sm font-medium text-green-700 mb-2 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Added Beers ({notification.beersAdded.length})
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {#each notification.beersAdded as beer}
+                  <div class="bg-green-50 border border-green-200 rounded-md p-2">
+                    <BeerCard {beer} showActions={false} />
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+
+          {#if notification.beersRemoved?.length > 0}
+            <div>
+              <h4 class="text-sm font-medium text-red-700 mb-2 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                </svg>
+                Removed Beers ({notification.beersRemoved.length})
+              </h4>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {#each notification.beersRemoved as beer}
+                  <div class="bg-red-50 border border-red-200 rounded-md p-2">
+                    <BeerCard {beer} showActions={false} />
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
 
       <div class="mt-3 flex justify-between items-center">
         <div class="flex space-x-2">

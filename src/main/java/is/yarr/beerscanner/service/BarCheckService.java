@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service for bar check operations.
@@ -141,11 +142,14 @@ public class BarCheckService {
                 }
 
                 // Update the bar's beers
-                // TODO: Add beers and stuff!!!
-                changes = updateBarBeers(bar, beerOutputs);
+                var barUpdateResult = updateBarBeers(bar, beerOutputs);
+                changes = barUpdateResult.changes();
 
                 // Send notifications
-                notificationService.sendBarMenuChangedNotifications(bar);
+                notificationService.sendBarMenuChangedNotifications(bar, barUpdateResult);
+
+                check.setBeersAdded(barUpdateResult.beersAdded());
+                check.setBeersRemoved(barUpdateResult.beersRemoved());
             }
             
             // Update status to completed
@@ -167,6 +171,12 @@ public class BarCheckService {
         return barCheckRepository.save(check);
     }
 
+    public record BarUpdateResult(int changes, Set<Beer> beersAdded, Set<Beer> beersRemoved) {
+        BarUpdateResult(Set<Beer> beersAdded, Set<Beer> beersRemoved) {
+            this(beersAdded.size() + beersRemoved.size(), new HashSet<>(), new HashSet<>());
+        }
+    }
+
     /**
      * Update a bar's beers.
      *
@@ -175,11 +185,9 @@ public class BarCheckService {
      * @return Number of changes made
      */
     @Transactional
-    public int updateBarBeers(Bar bar, List<BeerListOutput.BeerOutput> newBeers) {
-        int changes = 0;
-
-        // Get the current beers
-//        List<Beer> currentBeers = beerService.getBeersAtBar(bar.getId());
+    public BarUpdateResult updateBarBeers(Bar bar, List<BeerListOutput.BeerOutput> newBeers) {
+        var beersAdded = new HashSet<Beer>();
+        var beersRemoved = new HashSet<Beer>();
 
         // Move current beers to past beers
         bar.getCurrentBeers()
@@ -229,8 +237,8 @@ public class BarCheckService {
                 LOGGER.debug("Updating last verified time for beer: {} at bar: {}", existingBeer.getName(), bar.getName());
             } else { // Send notifications for new beers
                 LOGGER.debug("Doesnt already exist");
+                beersAdded.add(existingBeer);
                 notificationService.sendBeerAvailableNotifications(bar, existingBeer);
-                changes++;
 
                 var added = bar.addCurrentBeer(existingBeer); // I think this should always be true
                 LOGGER.debug("({}) Adding beer: {} to bar: {}", added, existingBeer.getName(), bar.getName());
@@ -243,15 +251,14 @@ public class BarCheckService {
                 LOGGER.debug("Removing beer: {} from bar: {}", bb.getBeer().getName(), bar.getName());
                 bar.removeCurrentBeer(bb.getBeer());
                 bar.addPastBeer(bb);
-                changes++;
-                // TODO: log specific changes
+                beersRemoved.add(bb.getBeer());
             }
         }
 
         // Save the bar
         barRepository.save(bar);
 
-        return changes;
+        return new BarUpdateResult(beersAdded, beersRemoved);
     }
 
     /**

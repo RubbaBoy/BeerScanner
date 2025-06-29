@@ -4,16 +4,22 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Entity representing a check of a bar's menu.
@@ -56,6 +62,23 @@ public class BarCheck {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "bar_check_beers_added",
+            joinColumns = @JoinColumn(name = "bar_check_id"),
+            inverseJoinColumns = @JoinColumn(name = "beer_id")
+    )
+    private Set<Beer> beersAdded = new HashSet<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "bar_check_beers_removed",
+            joinColumns = @JoinColumn(name = "bar_check_id"),
+            inverseJoinColumns = @JoinColumn(name = "beer_id")
+    )
+    private Set<Beer> beersRemoved = new HashSet<>();
+
 
     /**
      * Status of the menu processing.
@@ -133,6 +156,14 @@ public class BarCheck {
         return createdAt;
     }
 
+    public Set<Beer> getBeersAdded() {
+        return beersAdded;
+    }
+
+    public Set<Beer> getBeersRemoved() {
+        return beersRemoved;
+    }
+
     // Setters
     public void setId(Long id) {
         this.id = id;
@@ -174,6 +205,14 @@ public class BarCheck {
         this.createdAt = createdAt;
     }
 
+    public void setBeersAdded(Set<Beer> beersAdded) {
+        this.beersAdded = beersAdded;
+    }
+
+    public void setBeersRemoved(Set<Beer> beersRemoved) {
+        this.beersRemoved = beersRemoved;
+    }
+
     // equals and hashCode
     @Override
     public boolean equals(Object o) {
@@ -201,6 +240,9 @@ public class BarCheck {
                 ", processingStatus=" + processingStatus +
                 ", errorMessage='" + errorMessage + '\'' +
                 ", createdAt=" + createdAt +
+                ", processDuration=" + processDuration +
+                ", beersAdded=" + beersAdded +
+                ", beersRemoved=" + beersRemoved +
                 '}';
     }
 

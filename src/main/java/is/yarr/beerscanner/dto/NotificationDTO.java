@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import is.yarr.beerscanner.model.Notification.NotificationType;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * DTO for Notification entity with information for API responses.
@@ -19,6 +21,8 @@ public class NotificationDTO {
     private NotificationType type;
     private boolean read;
     private boolean sent;
+    private Set<BeerDTO> beersAdded = new HashSet<>();
+    private Set<BeerDTO> beersRemoved = new HashSet<>();
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
@@ -34,7 +38,7 @@ public class NotificationDTO {
     public NotificationDTO() {
     }
 
-    public NotificationDTO(Long id, Long userId, Long barId, Long beerId, String title, String message, NotificationType type, boolean read, boolean sent, LocalDateTime createdAt, LocalDateTime sentAt, UserDTO user, BarDTO bar, BeerDTO beer) {
+    public NotificationDTO(Long id, Long userId, Long barId, Long beerId, String title, String message, NotificationType type, boolean read, boolean sent, LocalDateTime createdAt, LocalDateTime sentAt, UserDTO user, BarDTO bar, BeerDTO beer, Set<BeerDTO> beersAdded, Set<BeerDTO> beersRemoved) {
         this.id = id;
         this.userId = userId;
         this.barId = barId;
@@ -49,6 +53,8 @@ public class NotificationDTO {
         this.user = user;
         this.bar = bar;
         this.beer = beer;
+        this.beersAdded = beersAdded;
+        this.beersRemoved = beersRemoved;
     }
 
     public Long getId() {
@@ -163,6 +169,22 @@ public class NotificationDTO {
         this.beer = beer;
     }
 
+    public Set<BeerDTO> getBeersAdded() {
+        return beersAdded;
+    }
+
+    public void setBeersAdded(Set<BeerDTO> beersAdded) {
+        this.beersAdded = beersAdded;
+    }
+
+    public Set<BeerDTO> getBeersRemoved() {
+        return beersRemoved;
+    }
+
+    public void setBeersRemoved(Set<BeerDTO> beersRemoved) {
+        this.beersRemoved = beersRemoved;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -228,6 +250,8 @@ public class NotificationDTO {
         private UserDTO user;
         private BarDTO bar;
         private BeerDTO beer;
+        private Set<BeerDTO> beersAdded = new HashSet<>();
+        private Set<BeerDTO> beersRemoved = new HashSet<>();
 
         Builder() {
         }
@@ -302,8 +326,18 @@ public class NotificationDTO {
             return this;
         }
 
+        public Builder beersAdded(Set<BeerDTO> beersAdded) {
+            this.beersAdded = beersAdded;
+            return this;
+        }
+
+        public Builder beersRemoved(Set<BeerDTO> beersRemoved) {
+            this.beersRemoved = beersRemoved;
+            return this;
+        }
+
         public NotificationDTO build() {
-            return new NotificationDTO(id, userId, barId, beerId, title, message, type, read, sent, createdAt, sentAt, user, bar, beer);
+            return new NotificationDTO(id, userId, barId, beerId, title, message, type, read, sent, createdAt, sentAt, user, bar, beer, beersAdded, beersRemoved);
         }
 
         public String toString() {

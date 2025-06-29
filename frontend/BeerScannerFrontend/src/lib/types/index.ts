@@ -113,6 +113,8 @@ export interface Notification {
   sentAt?: string;
   read?: boolean;
   sent?: boolean;
+  beersAdded?: Beer[];
+  beersRemoved?: Beer[];
 }
 
 // BarCheck type

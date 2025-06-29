@@ -63,6 +63,11 @@ export interface BeerAlias {
   updatedAt: string;
 }
 
+export interface BeerAvailability {
+  beer: Beer
+  availableAt: string
+}
+
 export interface BeerAliasAdd {
   name: string;
   brewery: string;

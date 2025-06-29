@@ -46,21 +46,21 @@ public interface BeerRepository extends JpaRepository<Beer, Long> {
      */
     Page<Beer> findByTypeContainingIgnoreCase(String type, Pageable pageable);
 
-    /**
-     * Find beers that are currently available at a specific bar.
-     *
-     * @param bar the bar to search for
-     * @return a list of beers currently available at the bar
-     */
-    List<Beer> findByAvailableAtContains(Bar bar);
-
-    /**
-     * Find beers that were previously available at a specific bar.
-     *
-     * @param bar the bar to search for
-     * @return a list of beers previously available at the bar
-     */
-    List<Beer> findByPreviouslyAvailableAtContains(Bar bar);
+//    /**
+//     * Find beers that are currently available at a specific bar.
+//     *
+//     * @param bar the bar to search for
+//     * @return a list of beers currently available at the bar
+//     */
+//    List<Beer> findByAvailableAtContains(Bar bar);
+//
+//    /**
+//     * Find beers that were previously available at a specific bar.
+//     *
+//     * @param bar the bar to search for
+//     * @return a list of beers previously available at the bar
+//     */
+//    List<Beer> findByPreviouslyAvailableAtContains(Bar bar);
 
     /**
      * Find beers that are tracked by a specific user.

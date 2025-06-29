@@ -4,6 +4,7 @@ import is.yarr.beerscanner.dto.BarAdminDTO;
 import is.yarr.beerscanner.dto.BarCheckDTO;
 import is.yarr.beerscanner.dto.BarDTO;
 import is.yarr.beerscanner.dto.BeerAliasDTO;
+import is.yarr.beerscanner.dto.BeerAvailabilityDTO;
 import is.yarr.beerscanner.dto.BeerDTO;
 import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.dto.BeerTrackingDTO;
@@ -19,6 +20,8 @@ import is.yarr.beerscanner.model.BeerTracking;
 import is.yarr.beerscanner.model.Notification;
 import is.yarr.beerscanner.model.ScraperStats;
 import is.yarr.beerscanner.model.User;
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -73,8 +76,10 @@ public class DTOMapperService {
                 .description(beer.getDescription())
                 .createdAt(beer.getCreatedAt())
                 .updatedAt(beer.getUpdatedAt())
-                .availableAt(beer.getAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
-                .previouslyAvailableAt(beer.getPreviouslyAvailableAt().stream().map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
+                .availableAt(beer.getAvailableAt().stream().map(BarBeerCurrent::getBar)
+                        .map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
+                .previouslyAvailableAt(beer.getBarHistory().stream().map(BarBeerHistory::getBar)
+                        .map(bar -> new BarDTO(bar.getId(), bar.getName(), bar.getLocation(), bar.getCurrentBeers().size(), bar.getLastCheckedAt())).collect(Collectors.toSet()))
                 .build();
     }
 
@@ -380,5 +385,19 @@ public class DTOMapperService {
         return beerAliases.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public BeerAvailabilityDTO toDTOAvailability(BarBeerCurrent beer) {
+        return BeerAvailabilityDTO.builder()
+                .beer(toDTO(beer.getBeer()))
+                .availableAt(beer.getAddedAt())
+                .build();
+    }
+
+    public BeerAvailabilityDTO toDTOAvailability(BarBeerHistory beer) {
+        return BeerAvailabilityDTO.builder()
+                .beer(toDTO(beer.getBeer()))
+                .availableAt(beer.getAddedAt())
+                .build();
     }
 }

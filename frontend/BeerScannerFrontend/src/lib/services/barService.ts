@@ -1,6 +1,17 @@
 import api from './api';
 import { trackUserResource, untrackUserResource } from './serviceHelpers';
-import type {Bar, PageBar, Beer, BarCheck, PageBarCheck, Pageable, User, BarAdmin, PageBarAdmin} from '$lib/types';
+import type {
+  Bar,
+  PageBar,
+  Beer,
+  BarCheck,
+  PageBarCheck,
+  Pageable,
+  User,
+  BarAdmin,
+  PageBarAdmin,
+  BeerAvailability
+} from '$lib/types';
 
 // Get all bars with pagination
 export const getAllBars = async (pageable: Pageable): Promise<PageBar> => {
@@ -15,13 +26,13 @@ export const getBarById = async (id: number): Promise<Bar> => {
 };
 
 // Get current beers for a bar
-export const getCurrentBeers = async (barId: number): Promise<Beer[]> => {
+export const getCurrentBeers = async (barId: number): Promise<BeerAvailability[]> => {
   const response = await api.get(`/api/v1/bars/public/${barId}/current-beers`);
   return response.data;
 };
 
 // Get past beers for a bar
-export const getPastBeers = async (barId: number): Promise<Beer[]> => {
+export const getPastBeers = async (barId: number): Promise<BeerAvailability[]> => {
   const response = await api.get(`/api/v1/bars/public/${barId}/past-beers`);
   return response.data;
 };

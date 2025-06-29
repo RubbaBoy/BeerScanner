@@ -1,5 +1,7 @@
 package is.yarr.beerscanner.model;
 
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
@@ -8,7 +10,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -18,8 +19,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Entity representing a bar in the system.
@@ -56,21 +60,11 @@ public class Bar {
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved;
 
-    @ManyToMany
-    @JoinTable(
-            name = "bar_current_beers",
-            joinColumns = @JoinColumn(name = "bar_id"),
-            inverseJoinColumns = @JoinColumn(name = "beer_id")
-    )
-    private Set<Beer> currentBeers = new HashSet<>();
+    @OneToMany(mappedBy = "bar", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<BarBeerCurrent> currentBeers = new HashSet<>();
 
-    @ManyToMany
-    @JoinTable(
-            name = "bar_past_beers",
-            joinColumns = @JoinColumn(name = "bar_id"),
-            inverseJoinColumns = @JoinColumn(name = "beer_id")
-    )
-    private Set<Beer> pastBeers = new HashSet<>();
+    @OneToMany(mappedBy = "bar")
+    private Set<BarBeerHistory> beerHistory = new HashSet<>();
 
     @ManyToMany(mappedBy = "trackedBars")
     private Set<User> trackedBy = new HashSet<>();
@@ -100,7 +94,7 @@ public class Bar {
     // All-args constructor
     public Bar(Long id, String name, String location, String aiInstructions, String menuUrl, String menuXPath,
                String lastMenuHash, LocalDateTime lastCheckedAt, boolean isApproved,
-               Set<Beer> currentBeers, Set<Beer> pastBeers, Set<User> trackedBy,
+               Set<BarBeerCurrent> currentBeers, Set<BarBeerHistory> beerHistory, Set<User> trackedBy,
                Set<BarCheck> checks, User requestedBy, LocalDateTime createdAt,
                LocalDateTime updatedAt, BarWebpageSettings webpageSettings) {
         this.id = id;
@@ -113,7 +107,7 @@ public class Bar {
         this.lastCheckedAt = lastCheckedAt;
         this.isApproved = isApproved;
         this.currentBeers = currentBeers != null ? currentBeers : new HashSet<>();
-        this.pastBeers = pastBeers != null ? pastBeers : new HashSet<>();
+        this.beerHistory = beerHistory != null ? beerHistory : new HashSet<>();
         this.trackedBy = trackedBy != null ? trackedBy : new HashSet<>();
         this.checks = checks != null ? checks : new HashSet<>();
         this.requestedBy = requestedBy;
@@ -164,12 +158,20 @@ public class Bar {
         return isApproved;
     }
 
-    public Set<Beer> getCurrentBeers() {
+    public Set<BarBeerCurrent> getCurrentBeers() {
         return currentBeers;
     }
 
-    public Set<Beer> getPastBeers() {
-        return pastBeers;
+    public Set<Beer> getCurrentBeersAsOrderedBeerSet() {
+        return currentBeers.stream().map(BarBeerCurrent::getBeer).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public Set<BarBeerHistory> getBeerHistory() {
+        return beerHistory;
+    }
+
+    public Set<Beer> getBeerHistoryAsOrderedBeerSet() {
+        return beerHistory.stream().map(BarBeerHistory::getBeer).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public Set<User> getTrackedBy() {
@@ -233,12 +235,12 @@ public class Bar {
         isApproved = approved;
     }
 
-    public void setCurrentBeers(Set<Beer> currentBeers) {
+    public void setCurrentBeers(Set<BarBeerCurrent> currentBeers) {
         this.currentBeers = currentBeers;
     }
 
-    public void setPastBeers(Set<Beer> pastBeers) {
-        this.pastBeers = pastBeers;
+    public void setBeerHistory(Set<BarBeerHistory> beerHistory) {
+        this.beerHistory = beerHistory;
     }
 
     public void setTrackedBy(Set<User> trackedBy) {
@@ -265,21 +267,92 @@ public class Bar {
         this.webpageSettings = webpageSettings;
     }
 
-    // equals and hashCode
+    // Efficient method to add a beer
+    public boolean addCurrentBeer(Beer beer) {
+        if (currentBeers.stream().anyMatch(bb -> bb.getBeer().equals(beer))) {
+            return false; // Beer already exists in current beers
+        }
+
+        BarBeerCurrent barBeer = new BarBeerCurrent(this, beer);
+        currentBeers.add(barBeer);
+        beer.getAvailableAt().add(barBeer);
+        return true;
+    }
+
+    // Remove beer and move to history
+    public Optional<BarBeerCurrent> removeCurrentBeer(Beer beer) {
+        return currentBeers.stream()
+                .filter(bb -> bb.getBeer().equals(beer))
+                .findFirst()
+                .map(current -> {
+                    currentBeers.remove(current);
+                    beer.getAvailableAt().remove(current);
+                    return current;
+                });
+    }
+
+    // Remove beer and move to history
+    public Optional<BarBeerHistory> removePastBeer(Beer beer) {
+        return beerHistory.stream()
+                .filter(bb -> bb.getBeer().equals(beer))
+                .findFirst()
+                .map(current -> {
+                    beerHistory.remove(current);
+                    beer.getBarHistory().remove(current);
+                    return current;
+                });
+    }
+
+    public void addPastBeer(BarBeerCurrent beerCurrent) {
+        var beer = beerCurrent.getBeer();
+
+        BarBeerHistory history = new BarBeerHistory();
+        history.setBar(this);
+        history.setBeer(beer);
+        history.setAddedAt(beerCurrent.getAddedAt());
+        history.setRemovedAt(LocalDateTime.now());
+
+        beerHistory.add(history);
+        beer.getBarHistory().add(history);
+    }
+
+
+    // Remove beer and move to history
+    public void removeBeerAndAddToHistory(Beer beer) {
+        BarBeerCurrent current = currentBeers.stream()
+                .filter(bb -> bb.getBeer().equals(beer))
+                .findFirst()
+                .orElse(null);
+
+        if (current != null) {
+            // Create history record
+            BarBeerHistory history = new BarBeerHistory();
+            history.setBar(this);
+            history.setBeer(beer);
+            history.setAddedAt(current.getAddedAt());
+            history.setRemovedAt(LocalDateTime.now());
+
+            // Remove from current
+            currentBeers.remove(current);
+            beer.getAvailableAt().remove(current);
+
+            // Add to history
+            beerHistory.add(history);
+        }
+    }
+
+
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Bar bar = (Bar) o;
-        return isApproved == bar.isApproved &&
-                Objects.equals(id, bar.id);
+    public final boolean equals(Object o) {
+        if (!(o instanceof Bar bar)) return false;
+
+        return Objects.equals(id, bar.id);
     }
 
     @Override
     public int hashCode() {
         return Objects.hashCode(id);
     }
-
 
     // toString
     @Override
@@ -316,8 +389,8 @@ public class Bar {
         private String lastMenuHash;
         private LocalDateTime lastCheckedAt;
         private boolean isApproved;
-        private Set<Beer> currentBeers = new HashSet<>();
-        private Set<Beer> pastBeers = new HashSet<>();
+        private Set<BarBeerCurrent> currentBeers = new HashSet<>();
+        private Set<BarBeerHistory> beerHistory = new HashSet<>();
         private Set<User> trackedBy = new HashSet<>();
         private Set<BarCheck> checks = new HashSet<>();
         private User requestedBy;
@@ -370,13 +443,13 @@ public class Bar {
             return this;
         }
 
-        public BarBuilder currentBeers(Set<Beer> currentBeers) {
+        public BarBuilder currentBeers(Set<BarBeerCurrent> currentBeers) {
             this.currentBeers = currentBeers;
             return this;
         }
 
-        public BarBuilder pastBeers(Set<Beer> pastBeers) {
-            this.pastBeers = pastBeers;
+        public BarBuilder beerHistory(Set<BarBeerHistory> beerHistory) {
+            this.beerHistory = beerHistory;
             return this;
         }
 
@@ -412,7 +485,7 @@ public class Bar {
 
         public Bar build() {
             return new Bar(id, name, location, aiInstructions, menuUrl, menuXPath, lastMenuHash,
-                    lastCheckedAt, isApproved, currentBeers, pastBeers,
+                    lastCheckedAt, isApproved, currentBeers, beerHistory,
                     trackedBy, checks, requestedBy, createdAt, updatedAt, webpageSettings);
         }
     }

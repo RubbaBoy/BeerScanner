@@ -3,6 +3,8 @@ package is.yarr.beerscanner.service;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
 import is.yarr.beerscanner.model.Beer;
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.repository.BarBeerCurrentRepository;
 import is.yarr.beerscanner.repository.BarCheckRepository;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.service.openai.BeerListOutput;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,14 +34,16 @@ public class BarCheckService {
     private final NotificationService notificationService;
     private final OpenAIService openAIService;
     private final ScraperService scraperService;
+    private final BarBeerCurrentRepository barBeerCurrentRepository;
 
-    public BarCheckService(BarCheckRepository barCheckRepository, BarRepository barRepository, BeerService beerService, NotificationService notificationService, OpenAIService openAIService, ScraperService scraperService) {
+    public BarCheckService(BarCheckRepository barCheckRepository, BarRepository barRepository, BeerService beerService, NotificationService notificationService, OpenAIService openAIService, ScraperService scraperService, BarBeerCurrentRepository barBeerCurrentRepository) {
         this.barCheckRepository = barCheckRepository;
         this.barRepository = barRepository;
         this.beerService = beerService;
         this.notificationService = notificationService;
         this.openAIService = openAIService;
         this.scraperService = scraperService;
+        this.barBeerCurrentRepository = barBeerCurrentRepository;
     }
 
     /**
@@ -77,7 +82,8 @@ public class BarCheckService {
     @Transactional
     public BarCheck createCheck(Bar bar, String menuContent, String contentType, String menuHash, int initialProcessDuration) {
         // Check if the menu has changed
-        boolean hasChanges = bar.getLastMenuHash() == null || !bar.getLastMenuHash().equals(menuHash);
+//        boolean hasChanges = bar.getLastMenuHash() == null || !bar.getLastMenuHash().equals(menuHash);
+        boolean hasChanges = true;
 
         // Create the check
         BarCheck check = BarCheck.builder()
@@ -147,7 +153,7 @@ public class BarCheckService {
             success = true;
         } catch (Exception e) {
             // Update status to failed
-            LOGGER.error("Error processing check for bar {}: {}", bar.getName(), e.getMessage());
+            LOGGER.error("Error processing check for bar {}", bar.getName(), e);
             check.setProcessingStatus(BarCheck.ProcessingStatus.FAILED);
             check.setErrorMessage(e.getMessage());
         } finally {
@@ -173,19 +179,22 @@ public class BarCheckService {
         int changes = 0;
 
         // Get the current beers
-        List<Beer> currentBeers = beerService.getBeersAtBar(bar.getId());
+//        List<Beer> currentBeers = beerService.getBeersAtBar(bar.getId());
 
         // Move current beers to past beers
-        bar.getPastBeers().addAll(bar.getCurrentBeers());
-        bar.getCurrentBeers().clear();
+        bar.getCurrentBeers()
+                .forEach(bar::addPastBeer);
 
-        System.out.println("Current beers for bar " + bar.getName() + ": " + currentBeers.size());
-        System.out.println(bar.getCurrentBeers().stream().map(Beer::getName).toList());
+        var currentBeersSet = new HashSet<>(bar.getCurrentBeers());
+
+        LOGGER.debug("Current beers for bar {}: {}\n{}", bar.getName(), currentBeersSet.size(), currentBeersSet.stream().map(b -> "#%d  %s".formatted(b.getBeer().getId(), b.getBeer().getName())).toList());
+
+        var existingBeersIds = new HashSet<Long>();
 
         // Add new beers
         for (BeerListOutput.BeerOutput beerOutput : newBeers) {
             // Find or create the beer
-            Beer existingBeer = beerService.findOrCreateBeer(
+            var existingBeerCreate = beerService.findOrCreateBeer(
                     beerOutput.name,
                     beerOutput.brewery,
                     beerOutput.type,
@@ -193,20 +202,52 @@ public class BarCheckService {
                     beerOutput.description
             );
 
-            // We don't want beers to be in past beers if they're currently available
-            bar.getPastBeers().remove(existingBeer);
-            
-            // Add to current beers
-            var added = bar.getCurrentBeers().add(existingBeer);
-            System.out.println("(" + added + ") Adding beer: " + existingBeer.getName() + " to bar: " + bar.getName());
+            var existingBeer = existingBeerCreate.beer();
 
-            // Send notifications for new beers
-            if (!currentBeers.contains(existingBeer)) {
+            if (!existingBeerCreate.alreadyExists()) {
+                LOGGER.debug("New beer found: {} ({})", existingBeer.getName(), existingBeer.getId());
+                // We don't want beers to be in past beers if they're currently available
+                bar.removePastBeer(existingBeer);
+            } else {
+                LOGGER.debug("Existing beer found: {} ({})", existingBeer.getName(), existingBeer.getId());
+                // Don't remove this from current beers at the end, because it's still available
+                existingBeersIds.add(existingBeer.getId());
+            }
+
+            LOGGER.debug("Processing beer: {} ({})", existingBeer.getName(), existingBeer.getId());
+
+            // If the beer needs an updated BarBeerCurrent, update it. If not, create a new one
+            var existingBeerCurrentOptional = currentBeersSet.stream().filter(b -> b.getBeer().getId().equals(existingBeer.getId())).findFirst();
+
+            if (existingBeerCurrentOptional.isPresent()) { // Updating a current beer that was found again
+                LOGGER.debug("Already exists");
+                var barBeerCurrent = existingBeerCurrentOptional.get();
+
+                barBeerCurrent.setLastVerifiedAt(LocalDateTime.now());
+                barBeerCurrentRepository.save(barBeerCurrent);
+
+                LOGGER.debug("Updating last verified time for beer: {} at bar: {}", existingBeer.getName(), bar.getName());
+            } else { // Send notifications for new beers
+                LOGGER.debug("Doesnt already exist");
                 notificationService.sendBeerAvailableNotifications(bar, existingBeer);
                 changes++;
+
+                var added = bar.addCurrentBeer(existingBeer); // I think this should always be true
+                LOGGER.debug("({}) Adding beer: {} to bar: {}", added, existingBeer.getName(), bar.getName());
             }
         }
-        
+
+        // Filter beers that weren't found in the new beers list
+        for (BarBeerCurrent bb : bar.getCurrentBeers()) {
+            if (!existingBeersIds.contains(bb.getBeer().getId())) {
+                LOGGER.debug("Removing beer: {} from bar: {}", bb.getBeer().getName(), bar.getName());
+                bar.removeCurrentBeer(bb.getBeer());
+                bar.addPastBeer(bb);
+                changes++;
+                // TODO: log specific changes
+            }
+        }
+
         // Save the bar
         barRepository.save(bar);
 

@@ -9,6 +9,7 @@ import is.yarr.beerscanner.dto.BeerRequestDTO;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.BeerAliasService;
 import is.yarr.beerscanner.service.BeerService;
@@ -149,7 +150,7 @@ public class BeerController {
     @GetMapping("/api/v1/beers/public/{beerId}/available-at")
     public ResponseEntity<List<BarDTO>> getBarsWithBeer(@PathVariable Long beerId) {
         Beer beer = beerService.getBeerById(beerId);
-        List<BarDTO> barDTOs = beer.getAvailableAt().stream()
+        List<BarDTO> barDTOs = beer.getAvailableAt().stream().map(BarBeerCurrent::getBar) // Dropping data about when available
                 .map(dtoMapperService::toDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(barDTOs);
@@ -341,7 +342,7 @@ public class BeerController {
             @RequestParam(required = false) Double abv,
             @RequestParam(required = false) String description) {
 
-        Beer beer = beerService.findOrCreateBeer(name, brewery, type, abv, description);
+        Beer beer = beerService.findOrCreateBeer(name, brewery, type, abv, description).beer();
         return ResponseEntity.ok(dtoMapperService.toDTO(beer));
     }
 

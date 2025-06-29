@@ -1,19 +1,24 @@
 package is.yarr.beerscanner.model;
 
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -43,11 +48,15 @@ public class Beer {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToMany(mappedBy = "currentBeers")
-    private Set<Bar> availableAt = new HashSet<>();
+    // Current availability - small set, eagerly loaded is fine
+    @OneToMany(mappedBy = "beer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("addedAt DESC")
+    private Set<BarBeerCurrent> availableAt = new LinkedHashSet<>();
 
-    @ManyToMany(mappedBy = "pastBeers")
-    private Set<Bar> previouslyAvailableAt = new HashSet<>();
+    // Historical availability - lazy loaded, only when needed
+    @OneToMany(mappedBy = "beer", fetch = FetchType.LAZY)
+    @OrderBy("addedAt DESC")
+    private Set<BarBeerHistory> barHistory = new LinkedHashSet<>();
 
     // Replace direct ManyToMany with OneToMany to BeerTracking
     @OneToMany(mappedBy = "beer", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -66,11 +75,18 @@ public class Beer {
 
     // Default constructor
     public Beer() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     // All-args constructor
     public Beer(Long id, String name, String type, String brewery, Double abv,
-                String description, Set<Bar> availableAt, Set<Bar> previouslyAvailableAt,
+                String description, Set<BarBeerCurrent> availableAt, Set<BarBeerHistory> barHistory,
                 Set<BeerTracking> trackings, Set<BeerAlias> aliases, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
@@ -78,8 +94,8 @@ public class Beer {
         this.brewery = brewery;
         this.abv = abv;
         this.description = description;
-        this.availableAt = availableAt != null ? availableAt : new HashSet<>();
-        this.previouslyAvailableAt = previouslyAvailableAt != null ? previouslyAvailableAt : new HashSet<>();
+        this.availableAt = availableAt != null ? availableAt : new LinkedHashSet<>();
+        this.barHistory = barHistory != null ? barHistory : new LinkedHashSet<>();
         this.trackings = trackings != null ? trackings : new HashSet<>();
         this.aliases = aliases != null ? aliases : new HashSet<>();
         this.createdAt = createdAt;
@@ -116,12 +132,12 @@ public class Beer {
         return description;
     }
 
-    public Set<Bar> getAvailableAt() {
+    public Set<BarBeerCurrent> getAvailableAt() {
         return availableAt;
     }
 
-    public Set<Bar> getPreviouslyAvailableAt() {
-        return previouslyAvailableAt;
+    public Set<BarBeerHistory> getBarHistory() {
+        return barHistory;
     }
 
     public Set<BeerTracking> getTrackings() {
@@ -165,12 +181,12 @@ public class Beer {
         this.description = description;
     }
 
-    public void setAvailableAt(Set<Bar> availableAt) {
-        this.availableAt = availableAt != null ? availableAt : new HashSet<>();
+    public void setAvailableAt(Set<BarBeerCurrent> availableAt) {
+        this.availableAt = availableAt != null ? availableAt : new LinkedHashSet<>();
     }
 
-    public void setPreviouslyAvailableAt(Set<Bar> previouslyAvailableAt) {
-        this.previouslyAvailableAt = previouslyAvailableAt != null ? previouslyAvailableAt : new HashSet<>();
+    public void setBarHistory(Set<BarBeerHistory> barHistory) {
+        this.barHistory = barHistory != null ? barHistory : new LinkedHashSet<>();
     }
 
     public void setTrackings(Set<BeerTracking> trackings) {
@@ -189,18 +205,17 @@ public class Beer {
         this.updatedAt = updatedAt;
     }
 
-    // equals and hashCode
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Beer beer = (Beer) o;
+    public final boolean equals(Object o) {
+        if (!(o instanceof Beer beer)) return false;
+
         return Objects.equals(id, beer.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        if (id == null) return super.hashCode();
+        return id.hashCode();
     }
 
     // toString
@@ -214,7 +229,7 @@ public class Beer {
                 ", abv=" + abv +
                 ", description='" + description + '\'' +
                 ", availableAt=" + availableAt +
-                ", previouslyAvailableAt=" + previouslyAvailableAt +
+                ", barHistory=" + barHistory +
                 ", trackings=" + trackings +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
@@ -229,8 +244,8 @@ public class Beer {
         private String brewery;
         private Double abv;
         private String description;
-        private Set<Bar> availableAt = new HashSet<>();
-        private Set<Bar> previouslyAvailableAt = new HashSet<>();
+        private Set<BarBeerCurrent> availableAt = new HashSet<>();
+        private Set<BarBeerHistory> barHistory = new HashSet<>();
         private Set<BeerTracking> trackings = new HashSet<>();
         private Set<BeerAlias> aliases = new HashSet<>();
         private LocalDateTime createdAt;
@@ -266,13 +281,13 @@ public class Beer {
             return this;
         }
 
-        public BeerBuilder availableAt(Set<Bar> availableAt) {
+        public BeerBuilder availableAt(Set<BarBeerCurrent> availableAt) {
             this.availableAt = availableAt != null ? availableAt : new HashSet<>();
             return this;
         }
 
-        public BeerBuilder previouslyAvailableAt(Set<Bar> previouslyAvailableAt) {
-            this.previouslyAvailableAt = previouslyAvailableAt != null ? previouslyAvailableAt : new HashSet<>();
+        public BeerBuilder barHistory(Set<BarBeerHistory> barHistory) {
+            this.barHistory = barHistory != null ? barHistory : new HashSet<>();
             return this;
         }
 
@@ -298,7 +313,7 @@ public class Beer {
 
         public Beer build() {
             return new Beer(id, name, type, brewery, abv, description,
-                    availableAt, previouslyAvailableAt, trackings, aliases,
+                    availableAt, barHistory, trackings, aliases,
                     createdAt, updatedAt);
         }
     }

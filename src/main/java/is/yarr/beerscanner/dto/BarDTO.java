@@ -16,6 +16,10 @@ public class BarDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime lastCheckedAt;
 
+    // This field is used for when bars are listed on a BeerDTO
+//    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+//    private LocalDateTime date;
+
     public BarDTO() {
     }
 

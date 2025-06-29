@@ -6,13 +6,13 @@
   import { BeerCard } from '$lib/components';
   import { currentUser, trackedBars } from '$lib/stores';
   import { format } from 'date-fns';
-  import type { Bar, Beer } from '$lib/types';
+  import type {Bar, Beer, BeerAvailability} from '$lib/types';
   
   const barId = parseInt($page.params.id);
   
   let bar: Bar | null = $state(null);
-  let currentBeers: Beer[] = $state([]);
-  let pastBeers: Beer[] = $state([]);
+  let currentBeers: BeerAvailability[] = $state([]);
+  let pastBeers: BeerAvailability[] = $state([]);
   let isLoading = $state(true);
   let error = $state<string | null>(null);
   let activeTab = $state('current');
@@ -177,8 +177,8 @@
         </div>
       {:else}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {#each currentBeers as beer}
-            <BeerCard {beer} />
+          {#each currentBeers as beerAvailability}
+            <BeerCard beer={beerAvailability.beer} date={beerAvailability.availableAt} dateCurrent={true} />
           {/each}
         </div>
       {/if}
@@ -189,8 +189,8 @@
         </div>
       {:else}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {#each pastBeers as beer}
-            <BeerCard {beer} />
+          {#each pastBeers as beerAvailability}
+            <BeerCard beer={beerAvailability.beer} date={beerAvailability.availableAt} dateCurrent={false} />
           {/each}
         </div>
       {/if}

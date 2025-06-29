@@ -3,11 +3,10 @@ package is.yarr.beerscanner.controller;
 import is.yarr.beerscanner.dto.BarAdminDTO;
 import is.yarr.beerscanner.dto.BarCheckDTO;
 import is.yarr.beerscanner.dto.BarDTO;
-import is.yarr.beerscanner.dto.BeerDTO;
+import is.yarr.beerscanner.dto.BeerAvailabilityDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
 import is.yarr.beerscanner.model.BarWebpageSettings;
-import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.scheduler.BarCheckScheduler;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.BarCheckService;
@@ -32,7 +31,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -111,11 +109,11 @@ public class BarController {
      * @return the current beer DTOs
      */
     @GetMapping("/api/v1/bars/public/{barId}/current-beers")
-    public ResponseEntity<List<BeerDTO>> getCurrentBeers(@PathVariable Long barId) {
-        Set<Beer> beers = barService.getCurrentBeers(barId);
-        List<BeerDTO> beerDTOs = beers.stream()
-                .map(dtoMapperService::toDTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<List<BeerAvailabilityDTO>> getCurrentBeers(@PathVariable Long barId) {
+        var beers = barService.getCurrentBeersWithDate(barId);
+        var beerDTOs = beers.stream()
+                .map(dtoMapperService::toDTOAvailability)
+                .toList();
         return ResponseEntity.ok(beerDTOs);
     }
 
@@ -126,11 +124,11 @@ public class BarController {
      * @return the past beer DTOs
      */
     @GetMapping("/api/v1/bars/public/{barId}/past-beers")
-    public ResponseEntity<List<BeerDTO>> getPastBeers(@PathVariable Long barId) {
-        Set<Beer> beers = barService.getPastBeers(barId);
-        List<BeerDTO> beerDTOs = beers.stream()
-                .map(dtoMapperService::toDTO)
-                .collect(Collectors.toList());
+    public ResponseEntity<List<BeerAvailabilityDTO>> getPastBeers(@PathVariable Long barId) {
+        var beers = barService.getPastBeersWithDate(barId);
+        var beerDTOs = beers.stream()
+                .map(dtoMapperService::toDTOAvailability)
+                .toList();
         return ResponseEntity.ok(beerDTOs);
     }
 

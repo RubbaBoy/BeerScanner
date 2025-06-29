@@ -5,7 +5,8 @@ import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
-import is.yarr.beerscanner.model.BeerTracking;
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerRequestRepository;
@@ -318,14 +319,14 @@ public class BeerService {
         Beer beer = getBeerById(id);
 
         // Remove beer from all bars' previouslyAvailableBeers collections
-        for (Bar bar : beer.getPreviouslyAvailableAt()) {
-            bar.getPastBeers().remove(beer);
+        for (BarBeerHistory history : beer.getBarHistory()) {
+            history.getBar().getBeerHistory().remove(history);
         }
-        beer.getPreviouslyAvailableAt().clear();
+        beer.getBarHistory().clear();
 
         // Also clean up current availability if needed
-        for (Bar bar : beer.getAvailableAt()) {
-            bar.getCurrentBeers().remove(beer);
+        for (BarBeerCurrent current : beer.getAvailableAt()) {
+            current.getBar().getCurrentBeers().remove(current);
         }
         beer.getAvailableAt().clear();
 
@@ -359,17 +360,27 @@ public class BeerService {
                 .toList());
 
         // Replace all old beer's available bars with the new beer.
-        barRepository.saveAll(beerToMerge.getAvailableAt().stream().peek(bar -> {
-            bar.getCurrentBeers().remove(beerToMerge);
-            bar.getCurrentBeers().add(beer);
-        }).toList());
+        barRepository.saveAll(beerToMerge.getAvailableAt().stream().peek(barBeerCurrent -> {
+            var bar = barBeerCurrent.getBar();
+
+            bar.removeCurrentBeer(beerToMerge)
+                    .ifPresent(removedCurrent -> {
+                        var addingCurrent = new BarBeerCurrent(bar, beer, removedCurrent.getAddedAt(), removedCurrent.getLastVerifiedAt());
+                        bar.getCurrentBeers().add(addingCurrent);
+                    });
+        }).map(BarBeerCurrent::getBar).toList());
 
 
         // Replace all old beer's past bars with the new beer.
-        barRepository.saveAll(beerToMerge.getPreviouslyAvailableAt().stream().peek(bar -> {
-            bar.getPastBeers().remove(beerToMerge);
-            bar.getPastBeers().add(beer);
-        }).toList());
+        barRepository.saveAll(beerToMerge.getBarHistory().stream().peek(barBeerHistory -> {
+            var bar = barBeerHistory.getBar();
+
+            bar.removePastBeer(beerToMerge)
+                    .ifPresent(removedHistory -> {
+                        var addingHistory = new BarBeerHistory(bar, beer, removedHistory.getAddedAt(), removedHistory.getRemovedAt());
+                        bar.getBeerHistory().add(addingHistory);
+                    });
+        }).map(BarBeerHistory::getBar).toList());
 
         beerRepository.delete(beerToMerge);
     }
@@ -384,7 +395,7 @@ public class BeerService {
         Bar bar = barRepository.findById(barId)
                 .orElseThrow(() -> new IllegalArgumentException("Bar not found with ID: " + barId));
 
-        return beerRepository.findByAvailableAtContains(bar);
+        return bar.getCurrentBeers().stream().map(BarBeerCurrent::getBeer).toList();
     }
 
     /**
@@ -397,8 +408,10 @@ public class BeerService {
         Bar bar = barRepository.findById(barId)
                 .orElseThrow(() -> new IllegalArgumentException("Bar not found with ID: " + barId));
 
-        return beerRepository.findByPreviouslyAvailableAtContains(bar);
+        return bar.getBeerHistory().stream().map(BarBeerHistory::getBeer).toList();
     }
+
+    public record BeerCreateResult(boolean alreadyExists, Beer beer) {}
 
     /**
      * Find or create a beer. If the beer is found and it has no description, set the description to the given one.
@@ -411,7 +424,7 @@ public class BeerService {
      * @return the found or created beer
      */
     @Transactional
-    public Beer findOrCreateBeer(String name, String brewery, String type, Double abv, String description) {
+    public BeerCreateResult findOrCreateBeer(String name, String brewery, String type, Double abv, String description) {
         Optional<Beer> existingBeer = beerRepository.findByNameAndBrewery(name, brewery)
                 .or(() -> beerRepository.findByAliasNameAndAliasBrewery(name, brewery));
 
@@ -420,13 +433,13 @@ public class BeerService {
             var beer = existingBeer.get();
             if (description != null && (beer.getDescription() == null || beer.getDescription().isEmpty())) {
                 beer.setDescription(description);
-                return beerRepository.save(beer);
+                beerRepository.save(beer);
             }
 
-            return beer;
+            return new BeerCreateResult(true, beer);
         }
 
-        Beer beer = Beer.builder()
+        var beer = Beer.builder()
                 .name(name)
                 .brewery(brewery)
                 .type(type)
@@ -434,7 +447,8 @@ public class BeerService {
                 .description(description)
                 .build();
 
-        return beerRepository.save(beer);
+        beerRepository.save(beer);
+        return new BeerCreateResult(false, beer);
     }
 
     public Page<BeerRequest> getBeerRequestsByRequestedUser(Long userId, Pageable pageable) {

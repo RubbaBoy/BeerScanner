@@ -77,6 +77,7 @@
     try {
       await markNotificationAsRead(notification.id!);
       markAsRead(notification.id!);
+      notification.read = true;
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     } finally {

@@ -4,7 +4,10 @@ import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.ScraperStats;
 import is.yarr.beerscanner.model.User;
+import is.yarr.beerscanner.model.beer.BarBeerCurrent;
+import is.yarr.beerscanner.model.beer.BarBeerHistory;
 import is.yarr.beerscanner.repository.BarRepository;
+import is.yarr.beerscanner.repository.BarBeerCurrentRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.ScraperStatsRepository;
 import is.yarr.beerscanner.repository.UserRepository;
@@ -13,7 +16,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -25,12 +27,14 @@ public class BarService {
 
     private final BarRepository barRepository;
     private final BeerRepository beerRepository;
+    private final BarBeerCurrentRepository barBeerCurrentRepository;
     private final UserRepository userRepository;
     private final ScraperStatsRepository scraperStatsRepository;
 
-    public BarService(BarRepository barRepository, BeerRepository beerRepository, UserRepository userRepository, ScraperStatsRepository scraperStatsRepository) {
+    public BarService(BarRepository barRepository, BeerRepository beerRepository, BarBeerCurrentRepository barBeerCurrentRepository, UserRepository userRepository, ScraperStatsRepository scraperStatsRepository) {
         this.barRepository = barRepository;
         this.beerRepository = beerRepository;
+        this.barBeerCurrentRepository = barBeerCurrentRepository;
         this.userRepository = userRepository;
         this.scraperStatsRepository = scraperStatsRepository;
     }
@@ -160,7 +164,7 @@ public class BarService {
      */
     public Set<Beer> getCurrentBeers(Long barId) {
         Bar bar = getBarById(barId);
-        return bar.getCurrentBeers();
+        return bar.getCurrentBeersAsOrderedBeerSet();
     }
 
     /**
@@ -171,7 +175,29 @@ public class BarService {
      */
     public Set<Beer> getPastBeers(Long barId) {
         Bar bar = getBarById(barId);
-        return bar.getPastBeers();
+        return bar.getBeerHistoryAsOrderedBeerSet();
+    }
+
+    /**
+     * Get current beers for a bar.
+     *
+     * @param barId the bar ID
+     * @return the current beers
+     */
+    public Set<BarBeerCurrent> getCurrentBeersWithDate(Long barId) {
+        Bar bar = getBarById(barId);
+        return bar.getCurrentBeers();
+    }
+
+    /**
+     * Get past beers for a bar.
+     *
+     * @param barId the bar ID
+     * @return the past beers
+     */
+    public Set<BarBeerHistory> getPastBeersWithDate(Long barId) {
+        Bar bar = getBarById(barId);
+        return bar.getBeerHistory();
     }
 
     /**
@@ -181,24 +207,28 @@ public class BarService {
      * @param currentBeerIds the IDs of the current beers
      * @return the updated bar
      */
-    @Transactional
-    public Bar updateBeers(Long barId, List<Long> currentBeerIds) {
-        Bar bar = getBarById(barId);
-
-        // Move current beers to past beers
-        bar.getPastBeers().addAll(bar.getCurrentBeers());
-        bar.getCurrentBeers().clear();
-
-        // Add new current beers
-        for (Long beerId : currentBeerIds) {
-            Beer beer = beerRepository.findById(beerId)
-                    .orElseThrow(() -> new IllegalArgumentException("Beer not found with ID: " + beerId));
-            bar.getCurrentBeers().add(beer);
-        }
-
-        bar.setLastCheckedAt(LocalDateTime.now());
-        return barRepository.save(bar);
-    }
+//    @Transactional
+//    public Bar updateBeers(Long barId, List<Long> currentBeerIds) {
+//        Bar bar = getBarById(barId);
+//
+//        // Move current beers to past beers
+//        bar.getPastBeers().addAll(bar.getCurrentBeers());
+//        bar.getCurrentBeers().clear();
+//
+//        // Add new current beers
+//        for (Long beerId : currentBeerIds) {
+//            Beer beer = beerRepository.findById(beerId)
+//                    .orElseThrow(() -> new IllegalArgumentException("Beer not found with ID: " + beerId));
+//
+//            var availability =
+//                    beerAvailabilityRepository.save(new BeerAvailability(beer, LocalDateTime.now()));
+//
+//            bar.getCurrentBeers().add(availability);
+//        }
+//
+//        bar.setLastCheckedAt(LocalDateTime.now());
+//        return barRepository.save(bar);
+//    }
 
     /**
      * Get bars requested by a user.

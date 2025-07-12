@@ -292,6 +292,8 @@ public class DTOMapperService {
                 .processingStatus(barCheck.getProcessingStatus())
                 .errorMessage(barCheck.getErrorMessage())
                 .createdAt(barCheck.getCreatedAt())
+                .beersAdded(toBeerDTOSet(barCheck.getBeersAdded()))
+                .beersRemoved(toBeerDTOSet(barCheck.getBeersRemoved()))
                 .build();
     }
 

@@ -7,10 +7,12 @@ import is.yarr.beerscanner.model.BeerAlias;
 import is.yarr.beerscanner.model.BeerRequest;
 import is.yarr.beerscanner.model.beer.BarBeerCurrent;
 import is.yarr.beerscanner.model.beer.BarBeerHistory;
+import is.yarr.beerscanner.repository.BarCheckRepository;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
 import is.yarr.beerscanner.repository.BeerRequestRepository;
 import is.yarr.beerscanner.repository.BeerTrackingRepository;
+import is.yarr.beerscanner.repository.NotificationRepository;
 import is.yarr.beerscanner.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -186,13 +188,17 @@ public class BeerService {
     }
 
     private final BeerTrackingRepository beerTrackingRepository;
+    private final BarCheckRepository barCheckRepository;
+    private final NotificationRepository notificationRepository;
 
-    public BeerService(BeerRepository beerRepository, BarRepository barRepository, BeerRequestRepository beerRequestRepository, UserRepository userRepository, BeerTrackingRepository beerTrackingRepository) {
+    public BeerService(BeerRepository beerRepository, BarRepository barRepository, BeerRequestRepository beerRequestRepository, UserRepository userRepository, BeerTrackingRepository beerTrackingRepository, BarCheckRepository barCheckRepository, NotificationRepository notificationRepository) {
         this.beerRepository = beerRepository;
         this.barRepository = barRepository;
         this.beerRequestRepository = beerRequestRepository;
         this.userRepository = userRepository;
         this.beerTrackingRepository = beerTrackingRepository;
+        this.barCheckRepository = barCheckRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -285,7 +291,7 @@ public class BeerService {
     /**
      * Update a beer.
      *
-     * @param id   the beer ID
+     * @param id         the beer ID
      * @param beerModify the updated beer
      * @return the updated beer
      */
@@ -340,7 +346,7 @@ public class BeerService {
      * Merge two beers into one. The first beer will be kept, and the second beer will be deleted. All instances of the
      * second beer will be replaced with the first beer.
      *
-     * @param beerId The beer ID to keep
+     * @param beerId        The beer ID to keep
      * @param beerToMergeId The beer ID to merge into the first beer (This <b>DELETES</b> the beer)
      */
     @Transactional
@@ -381,6 +387,40 @@ public class BeerService {
                         bar.getBeerHistory().add(addingHistory);
                     });
         }).map(BarBeerHistory::getBar).toList());
+
+        barCheckRepository.saveAll(
+                barCheckRepository.findByBeerAddedOrRemoved(beerToMerge)
+                .stream().peek(barCheck -> {
+                    if (barCheck.getBeersAdded().remove(beerToMerge)) {
+                        barCheck.getBeersAdded().add(beer);
+                    }
+
+                    if (barCheck.getBeersRemoved().remove(beerToMerge)) {
+                        barCheck.getBeersRemoved().add(beer);
+                    }
+                }).toList());
+
+        notificationRepository.saveAll(
+                notificationRepository.findAllRelatedToBeer(beerToMerge)
+                        .stream().peek(notification -> {
+                            if (beerToMerge.equals(notification.getBeer())) {
+                                notification.setBeer(beer);
+                            }
+
+                            if (notification.getBeersAdded().remove(beerToMerge)) {
+                                notification.getBeersAdded().add(beer);
+                            }
+
+                            if (notification.getBeersRemoved().remove(beerToMerge)) {
+                                notification.getBeersRemoved().add(beer);
+                            }
+
+                            if (notification.getBeersRemoved().contains(beer) && notification.getBeersAdded().contains(beer)) {
+                                // If the beer is both added and removed, remove it from the notification
+                                notification.getBeersAdded().remove(beer);
+                                notification.getBeersRemoved().remove(beer);
+                            }
+                        }).toList());
 
         beerRepository.delete(beerToMerge);
     }
@@ -512,8 +552,8 @@ public class BeerService {
     /**
      * Add an alias to a beer.
      *
-     * @param beerId the beer ID
-     * @param name the alias name
+     * @param beerId  the beer ID
+     * @param name    the alias name
      * @param brewery the alias brewery
      * @return the created beer alias
      */

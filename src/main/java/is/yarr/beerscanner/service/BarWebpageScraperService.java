@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class BarWebpageScraperService {
@@ -250,7 +251,7 @@ public class BarWebpageScraperService {
         }
     }
 
-    public String processTextualBarWebpage(Bar bar) {
+    public Optional<String> processTextualBarWebpage(Bar bar) {
         var webpageSettings = bar.getWebpageSettings();
         var menuUrl = bar.getMenuUrl();
 
@@ -308,7 +309,7 @@ public class BarWebpageScraperService {
 
             LOGGER.info("Extracted text data:\n{}", jsResult.data);
 
-            return jsResult.data;
+            return Optional.of(jsResult.data);
         } catch (Exception e) {
             LOGGER.error("An error occurred while processing the bar webpage", e);
         } finally {
@@ -317,7 +318,7 @@ public class BarWebpageScraperService {
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     private WebElement waitForElement(WebDriver driver, String xpath) {

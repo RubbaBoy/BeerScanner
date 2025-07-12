@@ -349,6 +349,20 @@ public class BarController {
     }
 
     /**
+     * Get the most recent check for a bar (admin only).
+     *
+     * @param barId the bar ID
+     * @return the most recent check DTO for the bar
+     */
+    @GetMapping("/api/v1/admin/bars/{barId}/checks/{checkId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BarCheckDTO> getCheckForBar(@PathVariable Long barId, @PathVariable Long checkId) {
+        Optional<BarCheck> check = barCheckService.getCheckById(checkId, barId);
+        return check.map(c -> ResponseEntity.ok(dtoMapperService.toDTO(c)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
      * Manually check a bar (admin only).
      *
      * @param barId the bar ID
@@ -359,7 +373,7 @@ public class BarController {
     public ResponseEntity<BarCheckDTO> checkBar(@PathVariable Long barId) {
         Bar bar = barService.getBarById(barId);
 
-        return barCheckScheduler.checkBar(bar)
+        return barCheckScheduler.checkBar(bar, true)
                 .map(dtoMapperService::toDTO)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.internalServerError().build());

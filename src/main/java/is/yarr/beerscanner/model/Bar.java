@@ -16,6 +16,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -31,6 +33,8 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name = "bars")
 public class Bar {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Bar.class);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -273,6 +277,7 @@ public class Bar {
             return false; // Beer already exists in current beers
         }
 
+        LOGGER.debug("Adding beer {} to bar {}. Current beers are: {}", beer.getName(), this.name, currentBeers.stream().map(b -> "(%d, %s)".formatted(b.getBeer().getId(), b.getBeer().getId())).collect(Collectors.joining(", ")));
         BarBeerCurrent barBeer = new BarBeerCurrent(this, beer);
         currentBeers.add(barBeer);
         beer.getAvailableAt().add(barBeer);

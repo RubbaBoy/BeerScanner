@@ -125,6 +125,12 @@ export const getLatestCheckForBar = async (barId: number): Promise<BarCheck> => 
   return response.data;
 };
 
+// Get latest check for a bar (admin only)
+export const getCheckForBar = async (barId: number, checkId: number): Promise<BarCheck> => {
+  const response = await api.get(`/api/v1/admin/bars/${barId}/checks/${checkId}`);
+  return response.data;
+};
+
 // Get unapproved bars (admin only)
 export const getUnapprovedBars = async (pageable: Pageable): Promise<PageBarAdmin> => {
   const response = await api.get('/api/v1/admin/bars/unapproved', { params: pageable });

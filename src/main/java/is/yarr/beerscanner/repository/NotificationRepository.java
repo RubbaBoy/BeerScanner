@@ -1,12 +1,15 @@
 package is.yarr.beerscanner.repository;
 
 import is.yarr.beerscanner.model.Bar;
+import is.yarr.beerscanner.model.BarCheck;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.Notification;
 import is.yarr.beerscanner.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -59,6 +62,33 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * @return a Page of notifications for the beer
      */
     Page<Notification> findByBeer(Beer beer, Pageable pageable);
+
+    /**
+     * Find notifications for a specific beer.
+     *
+     * @param beer the beer to find notifications for
+     * @return a Page of notifications for the beer
+     */
+    List<Notification> findByBeer(Beer beer);
+
+    /**
+     * Find checks that contain the specified beer either in beersAdded or beersRemoved collections.
+     *
+     * @param beer the beer to look for
+     * @return a list of matching checks
+     */
+    @Query("SELECT bc FROM BarCheck bc LEFT JOIN bc.beersAdded ba LEFT JOIN bc.beersRemoved br WHERE ba = :beer OR br = :beer")
+    List<BarCheck> findByBeerAddedOrRemoved(@Param("beer") Beer beer);
+
+    /**
+     * Find all notifications related to a specific beer, either where the beer property matches directly,
+     * or where the beer is included in beersAdded or beersRemoved collections.
+     *
+     * @param beer the beer to find notifications for
+     * @return a list of notifications related to the beer
+     */
+    @Query("SELECT n FROM Notification n WHERE n.beer = :beer OR :beer MEMBER OF n.beersAdded OR :beer MEMBER OF n.beersRemoved")
+    List<Notification> findAllRelatedToBeer(@Param("beer") Beer beer);
 
     /**
      * Find notifications of a specific type for a user.

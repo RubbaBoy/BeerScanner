@@ -2,9 +2,12 @@ package is.yarr.beerscanner.repository;
 
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.BarCheck;
+import is.yarr.beerscanner.model.Beer;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -66,4 +69,14 @@ public interface BarCheckRepository extends JpaRepository<BarCheck, Long> {
      * @return a list of checks for the bar that have changes
      */
     List<BarCheck> findByBarAndHasChangesTrue(Bar bar);
+
+    /**
+     * Find checks that contain the specified beer either in beersAdded or beersRemoved collections.
+     *
+     * @param beer the beer to look for
+     * @return a list of matching checks
+     */
+    @Query("SELECT bc FROM BarCheck bc LEFT JOIN bc.beersAdded ba LEFT JOIN bc.beersRemoved br WHERE ba = :beer OR br = :beer")
+    List<BarCheck> findByBeerAddedOrRemoved(@Param("beer") Beer beer);
+
 }

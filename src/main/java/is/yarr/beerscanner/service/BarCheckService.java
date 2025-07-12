@@ -73,6 +73,18 @@ public class BarCheckService {
     }
 
     /**
+     * Get a check by ID, ensuring it is associated with a specific bar.
+     *
+     * @param checkId the check ID
+     * @param barId the bar ID
+     * @return the check
+     */
+    public Optional<BarCheck> getCheckById(Long checkId, Long barId) {
+        return barCheckRepository.findById(checkId)
+                .filter(barCheck -> barCheck.getBar().getId().equals(barId));
+    }
+
+    /**
      * Create a new check.
      *
      * @param bar the bar to check
@@ -81,10 +93,9 @@ public class BarCheckService {
      * @return the created check
      */
     @Transactional
-    public BarCheck createCheck(Bar bar, String menuContent, String contentType, String menuHash, int initialProcessDuration) {
+    public BarCheck createCheck(Bar bar, boolean forced, String menuContent, String contentType, String menuHash, int initialProcessDuration) {
         // Check if the menu has changed
-//        boolean hasChanges = bar.getLastMenuHash() == null || !bar.getLastMenuHash().equals(menuHash);
-        boolean hasChanges = true;
+        boolean hasChanges = forced || (bar.getLastMenuHash() == null || !bar.getLastMenuHash().equals(menuHash));
 
         // Create the check
         BarCheck check = BarCheck.builder()
@@ -173,7 +184,7 @@ public class BarCheckService {
 
     public record BarUpdateResult(int changes, Set<Beer> beersAdded, Set<Beer> beersRemoved) {
         BarUpdateResult(Set<Beer> beersAdded, Set<Beer> beersRemoved) {
-            this(beersAdded.size() + beersRemoved.size(), new HashSet<>(), new HashSet<>());
+            this(beersAdded.size() + beersRemoved.size(), beersAdded, beersRemoved);
         }
     }
 
@@ -197,6 +208,7 @@ public class BarCheckService {
 
         LOGGER.debug("Current beers for bar {}: {}\n{}", bar.getName(), currentBeersSet.size(), currentBeersSet.stream().map(b -> "#%d  %s".formatted(b.getBeer().getId(), b.getBeer().getName())).toList());
 
+        // Beers that are already in the system
         var existingBeersIds = new HashSet<Long>();
 
         // Add new beers
@@ -240,13 +252,14 @@ public class BarCheckService {
                 beersAdded.add(existingBeer);
                 notificationService.sendBeerAvailableNotifications(bar, existingBeer);
 
+                LOGGER.debug("Adding beer: {} to bar: {}", existingBeer.getName(), bar.getName());
                 var added = bar.addCurrentBeer(existingBeer); // I think this should always be true
-                LOGGER.debug("({}) Adding beer: {} to bar: {}", added, existingBeer.getName(), bar.getName());
+                LOGGER.debug("\t^ Added: {}", added);
             }
         }
 
         // Filter beers that weren't found in the new beers list
-        for (BarBeerCurrent bb : bar.getCurrentBeers()) {
+        for (BarBeerCurrent bb : currentBeersSet) { // TODO: logic makes no sense
             if (!existingBeersIds.contains(bb.getBeer().getId())) {
                 LOGGER.debug("Removing beer: {} from bar: {}", bb.getBeer().getName(), bar.getName());
                 bar.removeCurrentBeer(bb.getBeer());

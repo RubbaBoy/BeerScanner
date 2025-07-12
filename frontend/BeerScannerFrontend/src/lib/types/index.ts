@@ -128,6 +128,8 @@ export interface BarCheck {
   processingStatus: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   errorMessage?: string;
   createdAt?: string;
+  beersAdded?: Beer[];
+  beersRemoved?: Beer[];
 }
 
 // Pagination types

@@ -79,11 +79,21 @@ public class BarCheckScheduler {
     }
 
     /**
-     * Check a bar.
+     * Check a bar, if it's been changed.
      *
      * @param bar the bar to check
      */
     public Optional<BarCheck> checkBar(Bar bar) {
+        return checkBar(bar, false);
+    }
+
+    /**
+     * Check a bar.
+     *
+     * @param bar    The bar to check
+     * @param forced Weather to ignore the menu hash (`true`) or not (`false`).
+     */
+    public Optional<BarCheck> checkBar(Bar bar, boolean forced) {
         LOGGER.info("Checking bar: {}", bar.getName());
 
         try {
@@ -98,7 +108,7 @@ public class BarCheckScheduler {
             long duration = System.currentTimeMillis() - startTime;
 
             // Create check
-            BarCheck check = barCheckService.createCheck(bar, menuContent.content, menuContent.contentType, menuHash, (int) duration);
+            BarCheck check = barCheckService.createCheck(bar, forced, menuContent.content, menuContent.contentType, menuHash, (int) duration);
 
             // Process check (this will handle if no changes were detected)
             barCheckService.processCheck(check.getId());
@@ -169,7 +179,7 @@ public class BarCheckScheduler {
             } else {
                 LOGGER.info("Fetching text menu from {}", finalMenuUrl);
                 contentType = "text/plain";
-                base64 = barWebpageScraperService.processTextualBarWebpage(bar);
+                base64 = barWebpageScraperService.processTextualBarWebpage(bar).orElseThrow(() -> new RuntimeException("Failed to process textual bar webpage"));
 
                 System.out.println("base64 = " + base64);
                 System.out.println("contentType = " + contentType);
@@ -312,6 +322,10 @@ public class BarCheckScheduler {
      * @return the hash
      */
     private String calculateHash(String content) {
+        if (content == null) {
+            return "";
+        }
+
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(content.getBytes());

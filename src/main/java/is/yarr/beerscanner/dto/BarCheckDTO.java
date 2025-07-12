@@ -5,6 +5,7 @@ import is.yarr.beerscanner.model.BarCheck;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * DTO for BarCheck entity with minimal information for API responses.
@@ -21,11 +22,13 @@ public class BarCheckDTO {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
+    private Set<BeerDTO> beersAdded;
+    private Set<BeerDTO> beersRemoved;
 
     public BarCheckDTO() {
     }
 
-    public BarCheckDTO(Long id, BarDTO bar, String menuHash, String contentType, boolean hasChanges, int processDuration, BarCheck.ProcessingStatus processingStatus, String errorMessage, LocalDateTime createdAt) {
+    public BarCheckDTO(Long id, BarDTO bar, String menuHash, String contentType, boolean hasChanges, int processDuration, BarCheck.ProcessingStatus processingStatus, String errorMessage, LocalDateTime createdAt, Set<BeerDTO> beersAdded, Set<BeerDTO> beersRemoved) {
         this.id = id;
         this.bar = bar;
         this.menuHash = menuHash;
@@ -35,6 +38,8 @@ public class BarCheckDTO {
         this.processingStatus = processingStatus;
         this.errorMessage = errorMessage;
         this.createdAt = createdAt;
+        this.beersAdded = beersAdded;
+        this.beersRemoved = beersRemoved;
     }
 
     public Long getId() {
@@ -109,6 +114,22 @@ public class BarCheckDTO {
         this.createdAt = createdAt;
     }
 
+    public Set<BeerDTO> getBeersAdded() {
+        return beersAdded;
+    }
+
+    public void setBeersAdded(Set<BeerDTO> beersAdded) {
+        this.beersAdded = beersAdded;
+    }
+
+    public Set<BeerDTO> getBeersRemoved() {
+        return beersRemoved;
+    }
+
+    public void setBeersRemoved(Set<BeerDTO> beersRemoved) {
+        this.beersRemoved = beersRemoved;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -150,6 +171,8 @@ public class BarCheckDTO {
         private BarCheck.ProcessingStatus processingStatus;
         private String errorMessage;
         private LocalDateTime createdAt;
+        private Set<BeerDTO> beersAdded;
+        private Set<BeerDTO> beersRemoved;
 
         Builder() {
         }
@@ -199,8 +222,18 @@ public class BarCheckDTO {
             return this;
         }
 
+        public Builder beersAdded(Set<BeerDTO> beersAdded) {
+            this.beersAdded = beersAdded;
+            return this;
+        }
+
+        public Builder beersRemoved(Set<BeerDTO> beersRemoved) {
+            this.beersRemoved = beersRemoved;
+            return this;
+        }
+
         public BarCheckDTO build() {
-            return new BarCheckDTO(id, bar, menuHash, contentType, hasChanges, processDuration, processingStatus, errorMessage, createdAt);
+            return new BarCheckDTO(id, bar, menuHash, contentType, hasChanges, processDuration, processingStatus, errorMessage, createdAt, beersAdded, beersRemoved);
         }
 
         public String toString() {

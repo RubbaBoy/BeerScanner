@@ -140,12 +140,12 @@
                 </svg>
                 Added Beers ({notification.beersAdded.length})
               </h4>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {#each notification.beersAdded as beer}
-                  <div class="bg-green-50 border border-green-200 rounded-md p-2">
+              <div class="bg-green-50 border border-green-200 rounded-md p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {#each notification.beersAdded as beer}
                     <BeerCard {beer} showActions={false} />
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
             </div>
           {/if}
@@ -158,12 +158,12 @@
                 </svg>
                 Removed Beers ({notification.beersRemoved.length})
               </h4>
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {#each notification.beersRemoved as beer}
-                  <div class="bg-red-50 border border-red-200 rounded-md p-2">
+              <div class="bg-red-50 border border-red-200 rounded-md p-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {#each notification.beersRemoved as beer}
                     <BeerCard {beer} showActions={false} />
-                  </div>
-                {/each}
+                  {/each}
+                </div>
               </div>
             </div>
           {/if}

@@ -1,11 +1,13 @@
 package is.yarr.beerscanner.security;
 
+import is.yarr.beerscanner.model.Permission;
 import is.yarr.beerscanner.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,18 +39,26 @@ public class UserPrincipal implements OAuth2User, UserDetails {
      * @return the UserPrincipal
      */
     public static UserPrincipal create(User user) {
-        List<GrantedAuthority> authorities;
-        
-        // Check if the user has the admin email address
-        if ("adamyarris@gmail.com".equals(user.getEmail())) {
-            authorities = List.of(
-                new SimpleGrantedAuthority("ROLE_USER"),
-                new SimpleGrantedAuthority("ROLE_ADMIN")
-            );
-        } else {
-            authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+
+        // Add basic user role
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+
+        // Add permissions as authorities
+        for (Permission permission : user.getPermissions()) {
+            authorities.add(new SimpleGrantedAuthority("PERMISSION_" + permission.name()));
+
+            // For backward compatibility, add ROLE_ADMIN if user has ADMIN permission
+            if (permission == Permission.ADMIN) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+            }
         }
-        
+
+        // For backward compatibility, check if the user has the admin flag set
+        if (user.isAdmin() && !authorities.contains(new SimpleGrantedAuthority("ROLE_ADMIN"))) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+
         return new UserPrincipal(
                 user.getId(),
                 user.getEmail(),

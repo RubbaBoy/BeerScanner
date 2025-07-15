@@ -4,6 +4,7 @@ import is.yarr.beerscanner.dto.BeerTrackingDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
 import is.yarr.beerscanner.model.BeerTracking;
+import is.yarr.beerscanner.model.Permission;
 import is.yarr.beerscanner.model.User;
 import is.yarr.beerscanner.repository.BarRepository;
 import is.yarr.beerscanner.repository.BeerRepository;
@@ -25,8 +26,10 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -268,5 +271,35 @@ public class UserService {
         User user = getUserById(userId);
         List<BeerTracking> trackings = beerTrackingRepository.findByUser(user);
         return dtoMapperService.toBeerTrackingDTOList(trackings);
+    }
+
+    /**
+     * Update a user's permissions.
+     *
+     * @param userId the user ID
+     * @param permissionStrings the new permissions as strings
+     * @return the updated user
+     */
+    @Transactional
+    public User updateUserPermissions(Long userId, Set<String> permissionStrings) {
+        User user = getUserById(userId);
+
+        // Convert string permissions to Permission enum values
+        Set<Permission> permissions = new HashSet<>();
+        for (String permissionString : permissionStrings) {
+            try {
+                Permission permission = Permission.valueOf(permissionString);
+                permissions.add(permission);
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Invalid permission: {}", permissionString);
+                // Skip invalid permissions
+            }
+        }
+
+        // Set the permissions on the user
+        user.setPermissions(permissions);
+
+        // Save and return the updated user
+        return userRepository.save(user);
     }
 }

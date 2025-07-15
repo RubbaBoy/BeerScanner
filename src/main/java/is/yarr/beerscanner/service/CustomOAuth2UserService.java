@@ -1,5 +1,6 @@
 package is.yarr.beerscanner.service;
 
+import is.yarr.beerscanner.model.Permission;
 import is.yarr.beerscanner.model.User;
 import is.yarr.beerscanner.repository.UserRepository;
 import is.yarr.beerscanner.security.UserPrincipal;
@@ -21,6 +22,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Map;
 
 /**
@@ -82,12 +85,22 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     // Create new user
                     boolean isAdmin = "adamyarris@gmail.com".equals(email);
 
+                    // Set up default permissions
+                    Set<Permission> permissions = new HashSet<>();
+                    permissions.add(Permission.ACTIVE);
+
+                    // Add admin permission for specific email
+                    if (isAdmin) {
+                        permissions.add(Permission.ADMIN);
+                        permissions.add(Permission.UPLOAD_PHOTOS);
+                    }
+
                     return User.builder()
                             .email(email)
                             .googleId(googleId)
                             .profilePicture(pictureUrl)
                             .notificationEnabled(true)
-                            .isAdmin(isAdmin)
+                            .permissions(permissions)
                             .build();
                 });
 

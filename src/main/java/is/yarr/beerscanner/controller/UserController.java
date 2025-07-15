@@ -6,12 +6,14 @@ import is.yarr.beerscanner.dto.BeerTrackingDTO;
 import is.yarr.beerscanner.dto.UserDTO;
 import is.yarr.beerscanner.model.Bar;
 import is.yarr.beerscanner.model.Beer;
+import is.yarr.beerscanner.model.Permission;
 import is.yarr.beerscanner.model.User;
 import is.yarr.beerscanner.security.UserPrincipal;
 import is.yarr.beerscanner.service.DTOMapperService;
 import is.yarr.beerscanner.service.UserService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,8 +25,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Controller for user-related operations.
@@ -187,6 +192,38 @@ public class UserController {
             @RequestParam(required = false) Long barId) {
 
         User user = userService.untrackBeer(userPrincipal.getId(), beerId, barId);
+        return ResponseEntity.ok(dtoMapperService.toDTO(user));
+    }
+
+    /**
+     * Get all available permissions.
+     *
+     * @return the list of all available permissions
+     */
+    @GetMapping("/permissions")
+    @PreAuthorize("hasAuthority('PERMISSION_ADMIN')")
+    public ResponseEntity<List<String>> getAllPermissions() {
+        return ResponseEntity.ok(
+            Arrays.stream(Permission.values())
+                .map(Enum::name)
+                .collect(Collectors.toList())
+        );
+    }
+
+    /**
+     * Update a user's permissions.
+     *
+     * @param userId the user ID
+     * @param permissions the new permissions
+     * @return the updated user
+     */
+    @PutMapping("/{userId}/permissions")
+    @PreAuthorize("hasAuthority('PERMISSION_ADMIN')")
+    public ResponseEntity<UserDTO> updateUserPermissions(
+            @PathVariable Long userId,
+            @RequestBody Set<String> permissions) {
+
+        User user = userService.updateUserPermissions(userId, permissions);
         return ResponseEntity.ok(dtoMapperService.toDTO(user));
     }
 }

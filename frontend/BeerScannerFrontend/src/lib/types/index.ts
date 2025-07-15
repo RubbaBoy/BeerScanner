@@ -93,11 +93,21 @@ export interface User {
   googleId?: string;
   profilePicture?: string;
   notificationEnabled?: boolean;
-  isAdmin?: boolean;
   // trackedBars?: Bar[];
   // trackedBeers?: Beer[];
   createdAt?: string;
   updatedAt?: string;
+  permissions?: Permission[];
+}
+
+type Permission = 'ACTIVE' | 'ADMIN' | 'UPLOAD_PHOTOS';
+
+export function isAdmin(user: User): boolean {
+  return user.permissions?.includes('ADMIN') ?? false;
+}
+
+export function hasPermission(user: User, permission: Permission): boolean {
+  return user.permissions?.includes(permission) ?? false;
 }
 
 // Notification type

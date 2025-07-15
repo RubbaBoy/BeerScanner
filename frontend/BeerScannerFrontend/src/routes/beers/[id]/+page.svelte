@@ -5,7 +5,7 @@
   import { trackBeer, untrackBeer } from '$lib/services/beerService';
   import { BarCard } from '$lib/components';
   import { currentUser, trackedBeers } from '$lib/stores';
-  import type {Beer, Bar, BeerExtended} from '$lib/types';
+  import {type Beer, type Bar, type BeerExtended, isAdmin} from '$lib/types';
   
   const beerId = parseInt($page.params.id);
   
@@ -88,7 +88,7 @@
 
         {#if $currentUser}
           <div class="flex flex-col sm:flex-row gap-2">
-            {#if beer && beer.id && $currentUser.isAdmin}
+            {#if beer && beer.id && isAdmin($currentUser)}
               <a
                       href={`/admin/beers/${beer.id}`}
                       class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center"

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * DTO for User entity with minimal information for API responses.
@@ -17,8 +19,7 @@ public class UserDTO {
     private String profilePicture;
     private boolean notificationEnabled;
 
-    @JsonProperty("isAdmin")
-    private boolean isAdmin;
+    private Set<String> permissions = new HashSet<>();
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
@@ -29,14 +30,14 @@ public class UserDTO {
     public UserDTO() {
     }
 
-    public UserDTO(Long id, String email, String name, String googleId, String profilePicture, boolean notificationEnabled, boolean isAdmin, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public UserDTO(Long id, String email, String name, String googleId, String profilePicture, boolean notificationEnabled, Set<String> permissions, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
         this.name = name;
         this.googleId = googleId;
         this.profilePicture = profilePicture;
         this.notificationEnabled = notificationEnabled;
-        this.isAdmin = isAdmin;
+        this.permissions = permissions != null ? permissions : new HashSet<>();
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -89,13 +90,12 @@ public class UserDTO {
         this.notificationEnabled = notificationEnabled;
     }
 
-    @JsonProperty("isAdmin")
-    public boolean isAdmin() {
-        return isAdmin;
+    public Set<String> getPermissions() {
+        return permissions;
     }
 
-    public void setAdmin(boolean admin) {
-        isAdmin = admin;
+    public void setPermissions(Set<String> permissions) {
+        this.permissions = permissions;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -120,19 +120,19 @@ public class UserDTO {
         if (o == null || getClass() != o.getClass()) return false;
         UserDTO userDTO = (UserDTO) o;
         return notificationEnabled == userDTO.notificationEnabled &&
-                isAdmin == userDTO.isAdmin &&
                 Objects.equals(id, userDTO.id) &&
                 Objects.equals(email, userDTO.email) &&
                 Objects.equals(name, userDTO.name) &&
                 Objects.equals(googleId, userDTO.googleId) &&
                 Objects.equals(profilePicture, userDTO.profilePicture) &&
+                Objects.equals(permissions, userDTO.permissions) &&
                 Objects.equals(createdAt, userDTO.createdAt) &&
                 Objects.equals(updatedAt, userDTO.updatedAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, email, name, googleId, profilePicture, notificationEnabled, isAdmin, createdAt, updatedAt);
+        return Objects.hash(id, email, name, googleId, profilePicture, notificationEnabled, permissions, createdAt, updatedAt);
     }
 
     @Override
@@ -144,7 +144,7 @@ public class UserDTO {
                 ", googleId='" + googleId + '\'' +
                 ", profilePicture='" + profilePicture + '\'' +
                 ", notificationEnabled=" + notificationEnabled +
-                ", isAdmin=" + isAdmin +
+                ", permissions=" + permissions +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +
                 '}';
@@ -161,7 +161,7 @@ public class UserDTO {
         private String googleId;
         private String profilePicture;
         private boolean notificationEnabled;
-        private boolean isAdmin;
+        private Set<String> permissions = new HashSet<>();
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -195,8 +195,8 @@ public class UserDTO {
             return this;
         }
 
-        public Builder isAdmin(boolean isAdmin) {
-            this.isAdmin = isAdmin;
+        public Builder permissions(Set<String> permissions) {
+            this.permissions = permissions;
             return this;
         }
 
@@ -211,7 +211,7 @@ public class UserDTO {
         }
 
         public UserDTO build() {
-            return new UserDTO(id, email, name, googleId, profilePicture, notificationEnabled, isAdmin, createdAt, updatedAt);
+            return new UserDTO(id, email, name, googleId, profilePicture, notificationEnabled, permissions, createdAt, updatedAt);
         }
     }
 }

@@ -7,6 +7,7 @@
   import { initNotificationStore } from '$lib/stores';
   import { clickOutside } from '$lib/actions/clickOutside';
   import { page } from '$app/stores';
+  import {isAdmin} from "$lib/types";
 
   let isMenuOpen = $state(false);
   let isUserMenuOpen = $state(false);
@@ -91,7 +92,7 @@
             {/if}
           </a>
 
-          {#if $currentUser.isAdmin}
+          {#if isAdmin($currentUser)}
             <!-- Admin dropdown -->
             <div class="relative">
               <button 
@@ -145,7 +146,7 @@
 
             {#if isUserMenuOpen}
               <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10" use:clickOutside={() => isUserMenuOpen = false}>
-                {#if $currentUser.isAdmin}
+                {#if isAdmin($currentUser)}
                   <div class="px-4 py-2 text-gray-800 font-semibold">Admin</div>
                 {/if}
                 <a href="/profile" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Profile</a>
@@ -238,7 +239,7 @@
               Request New Bar
             </a>
 
-            {#if $currentUser.isAdmin}
+            {#if isAdmin($currentUser)}
               <div class="border-t border-gray-700 my-2"></div>
               <div class="text-sm text-gray-400 py-1">Admin</div>
 

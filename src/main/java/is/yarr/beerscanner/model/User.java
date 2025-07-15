@@ -2,8 +2,13 @@ package is.yarr.beerscanner.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -47,8 +52,14 @@ public class User {
     @Column(name = "notification_enabled", nullable = false)
     private boolean notificationEnabled;
 
-    @Column(name = "is_admin", nullable = false)
-    private boolean isAdmin = false;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(
+        name = "user_permissions",
+        joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "permission")
+    private Set<Permission> permissions = new HashSet<>();
 
     @ManyToMany
     @JoinTable(
@@ -77,7 +88,7 @@ public class User {
 
     // All-args constructor
     public User(Long id, String email, String name, String googleId, String profilePicture, 
-                boolean notificationEnabled, boolean isAdmin, Set<Bar> trackedBars, 
+                boolean notificationEnabled, Set<Permission> permissions, Set<Bar> trackedBars,
                 Set<BeerTracking> beerTrackings, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.email = email;
@@ -85,7 +96,7 @@ public class User {
         this.googleId = googleId;
         this.profilePicture = profilePicture;
         this.notificationEnabled = notificationEnabled;
-        this.isAdmin = isAdmin;
+        this.permissions = permissions != null ? permissions : new HashSet<>();
         this.trackedBars = trackedBars != null ? trackedBars : new HashSet<>();
         this.beerTrackings = beerTrackings != null ? beerTrackings : new HashSet<>();
         this.createdAt = createdAt;
@@ -122,8 +133,32 @@ public class User {
         return notificationEnabled;
     }
 
+    /**
+     * Check if the user has a specific permission.
+     *
+     * @param permission the permission to check
+     * @return true if the user has the permission, false otherwise
+     */
+    public boolean hasPermission(Permission permission) {
+        return permissions.contains(permission);
+    }
+
+    /**
+     * Check if the user is an admin.
+     * This method is kept for backward compatibility.
+     *
+     * @return true if the user has the ADMIN permission or the isAdmin flag is true
+     */
     public boolean isAdmin() {
-        return isAdmin;
+        return hasPermission(Permission.ADMIN);
+    }
+
+    public Set<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(Set<Permission> permissions) {
+        this.permissions = permissions;
     }
 
     public Set<Bar> getTrackedBars() {
@@ -167,10 +202,6 @@ public class User {
         this.notificationEnabled = notificationEnabled;
     }
 
-    public void setAdmin(boolean admin) {
-        isAdmin = admin;
-    }
-
     public void setTrackedBars(Set<Bar> trackedBars) {
         this.trackedBars = trackedBars;
     }
@@ -194,7 +225,6 @@ public class User {
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
         return notificationEnabled == user.notificationEnabled &&
-               isAdmin == user.isAdmin &&
                Objects.equals(id, user.id);
     }
 
@@ -227,7 +257,7 @@ public class User {
         private String googleId;
         private String profilePicture;
         private boolean notificationEnabled;
-        private boolean isAdmin = false;
+        private Set<Permission> permissions = new HashSet<>();
         private Set<Bar> trackedBars = new HashSet<>();
         private Set<BeerTracking> beerTrackings = new HashSet<>();
         private LocalDateTime createdAt;
@@ -263,8 +293,8 @@ public class User {
             return this;
         }
 
-        public UserBuilder isAdmin(boolean isAdmin) {
-            this.isAdmin = isAdmin;
+        public UserBuilder permissions(Set<Permission> permissions) {
+            this.permissions = permissions;
             return this;
         }
 
@@ -289,8 +319,7 @@ public class User {
         }
 
         public User build() {
-            return new User(id, email, name, googleId, profilePicture, notificationEnabled, 
-                           isAdmin, trackedBars, beerTrackings, createdAt, updatedAt);
+            return new User(id, email, name, googleId, profilePicture, notificationEnabled, permissions, trackedBars, beerTrackings, createdAt, updatedAt);
         }
     }
 }

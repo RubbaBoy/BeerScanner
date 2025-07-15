@@ -6,7 +6,7 @@
   import { BeerCard } from '$lib/components';
   import { currentUser, trackedBars } from '$lib/stores';
   import { format } from 'date-fns';
-  import type {Bar, Beer, BeerAvailability} from '$lib/types';
+  import {type Bar, type Beer, type BeerAvailability, isAdmin} from '$lib/types';
 
   const barId = parseInt($page.params.id);
 
@@ -103,7 +103,7 @@
 
         {#if $currentUser}
           <div class="flex flex-col sm:flex-row gap-2">
-              {#if bar && bar.id && $currentUser.isAdmin}
+              {#if bar && bar.id && isAdmin($currentUser)}
                 <a
                         href={`/admin/bars/${bar.id}`}
                         class="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 flex items-center justify-center"
